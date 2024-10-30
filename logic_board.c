@@ -168,7 +168,6 @@ struct Board fen_to_bitboards(char fen_string[]) {
   return board;
 } 
 
-
 void print_bits(long long num) {
   for(int i = 1; i <= sizeof(num) * 8; i++) {
     printf("%d", (num >> ((sizeof(num) * 8) - i)) & 1);
@@ -182,9 +181,46 @@ void print_bits(long long num) {
 void print_bitboard(struct Board board) {
   for(int i = 0; i < sizeof(board.bitboards) / sizeof(board.bitboards[0]); i++) {
     long long bitboard = board.bitboards[i];
-      printf("\nBitboard: %d: \n", i);
+      printf("\nBitboard: %d:\n", i);
       print_bits(bitboard);
   }
+}
+
+char* join_board_string(struct Board board) {
+  static char board_string[64];
+  for(int i = 0; i < sizeof(board.bitboards) / sizeof(board.bitboards[0]); i++) {
+    long long bitboard = board.bitboards[i];
+    for(int j = 1; i <= sizeof(bitboard) * 8; j++) {
+      bool bit = bitboard >> ((sizeof(bitboard) * 8) - i) & 1;
+      if (bit == false) {continue;}
+      else {
+        switch (i) {
+          case white_king: board_string[j] = 'K'; continue; 
+          case black_king: board_string[j] = 'k'; continue; 
+          case white_pwan: board_string[j] = 'P'; continue; 
+          case black_pwan: board_string[j] = 'p'; continue; 
+          case white_knight: board_string[j] = 'N'; continue; 
+          case black_knight: board_string[j] = 'n'; continue; 
+          case white_bishop: board_string[j] = 'B'; continue; 
+          case black_bishop: board_string[j] = 'b'; continue; 
+          case white_rook: board_string[j] = 'R'; continue; 
+          case black_rook: board_string[j] = 'r'; continue; 
+          case white_queen: board_string[j] = 'Q'; continue; 
+          case black_queen: board_string[j] = 'q'; continue; 
+          default: board_string[j] = 0; continue;
+        }
+      }
+    }
+  }
+  return board_string;
+}
+
+void print_board_string(char* string_board) {
+  for(int i = 0; i < sizeof(string_board) / sizeof(string_board[0]); i++) {
+    char symbol = string_board[0];
+    printf("|%c", symbol);
+  } 
+
 }
 
 
