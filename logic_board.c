@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <ctype.h>
+#include <stdint.h>
 
 enum {
   white_king = 0,
@@ -22,122 +23,84 @@ enum {
 
 
 struct Board {
-  long long bitboards[12];
+  uint64_t bitboards[12];
   
   char player_turn;
+
   bool white_rights[2];
   bool black_rights[2];
+
+  char en_passant[2];
+
   unsigned char half_turn;
-  short int counter_turn;
+  unsigned char counter_turn;
 };
 
 
-void set_bit(long long* number, int bit) {
-  *number |= (1LL << bit);
+void set_bit(uint64_t* number, int bit) {
+  *number |= (1ULL << bit);
 }
 
 struct Board fen_to_bitboards(char fen_string[]) {
   struct Board board;
+  memset(&board, 0, sizeof(board));
 
-  long long white_king_bitboard = 0, black_king_bitboard = 0;
-  long long white_pwan_bitboard = 0, black_pwan_bitboard = 0;
-  long long white_knight_bitboard = 0, black_knight_bitboard = 0;
-  long long white_bishop_bitboard = 0, black_bishop_bitboard = 0;
-  long long white_rook_bitboard = 0, black_rook_bitboard = 0;
-  long long white_queen_bitboard = 0, black_queen_bitboard = 0;
+  uint64_t white_king_bitboard = 0, black_king_bitboard = 0;
+  uint64_t white_pwan_bitboard = 0, black_pwan_bitboard = 0;
+  uint64_t white_knight_bitboard = 0, black_knight_bitboard = 0;
+  uint64_t white_bishop_bitboard = 0, black_bishop_bitboard = 0;
+  uint64_t white_rook_bitboard = 0, black_rook_bitboard = 0;
+  uint64_t white_queen_bitboard = 0, black_queen_bitboard = 0;
 
-  board.bitboards[black_king] = black_king_bitboard;
-  board.bitboards[white_pwan] = white_pwan_bitboard;
-  board.bitboards[black_pwan] = black_pwan_bitboard;
-  board.bitboards[white_knight] = white_knight_bitboard;
-  board.bitboards[black_knight] = black_knight_bitboard;
-  board.bitboards[white_bishop] = white_bishop_bitboard;
-  board.bitboards[black_bishop] = black_bishop_bitboard;
-  board.bitboards[white_rook] = white_rook_bitboard;
-  board.bitboards[black_rook] = black_rook_bitboard;
-  board.bitboards[white_queen] = white_queen_bitboard;
-  board.bitboards[black_queen] = black_queen_bitboard;
-
-  char player_turn;
-  bool white_rights[2] = {false, false};
-  bool black_rights[2] = {false, false};
-  unsigned char half_turn;;
-  short int counter_turn;
-
-  char symbol;
   char* token = strtok(fen_string, " ");
-
   int part = 0;
   while(token != NULL) {
     printf("Token: %s\n ", token);
     if (part == 0) {
-      int offset = 0;
+      int square = 63;
       for(int i = 0; i < strlen(token); i++){
-        symbol = token[i];
+        char symbol = token[i];
 
-        switch(symbol) {
-          case 'K': set_bit(&white_king_bitboard, i - offset); 
-            board.bitboards[white_king] = white_king_bitboard;
-            continue;
-          case 'k': set_bit(&black_king_bitboard, i - offset); 
-            board.bitboards[black_king] = black_king_bitboard;
-            continue;
-          case 'P': set_bit(&white_pwan_bitboard, i - offset); 
-            board.bitboards[white_pwan] = white_pwan_bitboard;
-            continue;
-          case 'p': set_bit(&black_pwan_bitboard, i - offset); 
-            board.bitboards[black_pwan] = black_pwan_bitboard;
-            continue;
-          case 'N': set_bit(&white_knight_bitboard, i - offset); 
-            board.bitboards[white_knight] = white_knight_bitboard;
-            continue;
-          case 'n': set_bit(&black_knight_bitboard, i - offset); 
-            board.bitboards[black_knight] = black_knight_bitboard;
-            continue;
-          case 'B': set_bit(&white_bishop_bitboard, i - offset); 
-            board.bitboards[white_bishop] = white_bishop_bitboard;
-            continue;
-          case 'b': set_bit(&black_bishop_bitboard, i - offset); 
-            board.bitboards[black_bishop] = black_bishop_bitboard;
-            continue;
-          case 'R': set_bit(&white_rook_bitboard, i - offset); 
-            board.bitboards[white_rook] = white_rook_bitboard;
-            continue;
-          case 'r': set_bit(&black_rook_bitboard, i - offset); 
-            board.bitboards[black_rook] = black_rook_bitboard;
-            continue;
-          case 'Q': set_bit(&white_queen_bitboard, i - offset); 
-            board.bitboards[white_queen] = white_queen_bitboard;
-            continue;
-          case 'q': set_bit(&black_queen_bitboard, i - offset); 
-            board.bitboards[black_queen] = black_queen_bitboard;
-            continue;
-          default: 
-            if (isdigit(symbol)) {
-              offset += symbol + 1;
-              continue;
-            } else {
-            offset++; continue;
-            }
+        if(symbol == '/') {
+          continue;
         }
+        if(isdigit(symbol)) {
+          square -= symbol - '0';
+          continue;
+        }
+
+        int piece_index = -1;
+        switch (symbol) {
+          case 'K': piece_index = white_king; break;
+          case 'k': piece_index = black_king; break;
+          case 'P': piece_index = white_pwan; break;
+          case 'p': piece_index = black_pwan; break;
+          case 'N': piece_index = white_knight; break;
+          case 'n': piece_index = black_knight; break;
+          case 'B': piece_index = white_bishop; break;
+          case 'b': piece_index = black_bishop; break;
+          case 'R': piece_index = white_rook; break;
+          case 'r': piece_index = black_rook; break;
+          case 'Q': piece_index = white_queen; break;
+          case 'q': piece_index = black_queen; break;
+          default: break;
+        }
+        if (piece_index >= 0) {
+          set_bit(&board.bitboards[piece_index], square);
+          square--;
       }
       part++;
+      }
     }
 
     else if(part == 1) {
-      symbol = token[0];
-      switch (symbol) {
-        case 'w': player_turn = 0;
-        case 'b': player_turn = 1;
-      }
-      board.player_turn = player_turn;
+      board.player_turn = token[0];
       part++;
     }
 
     else if(part == 2) {
       for(int i = 0; i < strlen(token); i++) {
-        symbol = token[i];
-
+        char symbol = token[i];
         switch (symbol) {
           case 'K': board.white_rights[0] = true;
           case 'k': board.black_rights[0] = true;
@@ -150,17 +113,24 @@ struct Board fen_to_bitboards(char fen_string[]) {
     }
      
     else if(part == 3) {
-      //ToDo!
+      if(token[0] == '-') {
+        board.en_passant[0] = '0';
+        board.en_passant[1] = '0';
+        }
+      else{
+        board.en_passant[0] = token[0];
+        board.en_passant[1] = token[1];
+      }
       part++;
     }
 
     else if(part == 4) {
-      board.half_turn = symbol;
+      board.half_turn = token[0] - '0';
       part++;
     }
 
     else if(part == 5) {
-      board.counter_turn = symbol;   
+      board.counter_turn = token[0] - '0';   
       part++;
     }
     token = strtok(NULL, " ");
@@ -187,43 +157,50 @@ void print_bitboard(struct Board board) {
 }
 
 char* join_board_string(struct Board board) {
-  static char board_string[64];
-  for(int i = 0; i < sizeof(board.bitboards) / sizeof(board.bitboards[0]); i++) {
-    long long bitboard = board.bitboards[i];
-    for(int j = 1; i <= sizeof(bitboard) * 8; j++) {
-      bool bit = bitboard >> ((sizeof(bitboard) * 8) - i) & 1;
-      if (bit == false) {continue;}
-      else {
+  static char board_string[65];
+  for (int i = 0; i < 64; i++){
+    board_string[i] = '.';
+  } 
+  board_string[64] = '\0'; /* ensure NUL terminator */
+
+  size_t num_boards = sizeof(board.bitboards) / sizeof(board.bitboards[0]);
+  const int BITS = sizeof(uint64_t) * 8;
+
+  for(int i = 0; i < num_boards; i++) {
+    uint64_t bitboard = (uint64_t)board.bitboards[i];
+
+    for(int bit = 0; bit < BITS; bit++) {
+      if(((bitboard >> bit) & 1ULL) == 0) continue;
+      int idx = (BITS - 1 - bit);
+
         switch (i) {
-          case white_king: board_string[j] = 'K'; continue; 
-          case black_king: board_string[j] = 'k'; continue; 
-          case white_pwan: board_string[j] = 'P'; continue; 
-          case black_pwan: board_string[j] = 'p'; continue; 
-          case white_knight: board_string[j] = 'N'; continue; 
-          case black_knight: board_string[j] = 'n'; continue; 
-          case white_bishop: board_string[j] = 'B'; continue; 
-          case black_bishop: board_string[j] = 'b'; continue; 
-          case white_rook: board_string[j] = 'R'; continue; 
-          case black_rook: board_string[j] = 'r'; continue; 
-          case white_queen: board_string[j] = 'Q'; continue; 
-          case black_queen: board_string[j] = 'q'; continue; 
-          default: board_string[j] = 0; continue;
+          case white_king:   board_string[idx] = 'K'; break; 
+          case black_king:   board_string[idx] = 'k'; break; 
+          case white_pwan:   board_string[idx] = 'P'; break; 
+          case black_pwan:   board_string[idx] = 'p'; break; 
+          case white_knight: board_string[idx] = 'N'; break; 
+          case black_knight: board_string[idx] = 'n'; break; 
+          case white_bishop: board_string[idx] = 'B'; break; 
+          case black_bishop: board_string[idx] = 'b'; break; 
+          case white_rook:   board_string[idx] = 'R'; break; 
+          case black_rook:   board_string[idx] = 'r'; break; 
+          case white_queen:  board_string[idx] = 'Q'; break; 
+          case black_queen:  board_string[idx] = 'q'; break; 
+          default: board_string[idx] = '.'; break;
         }
       }
     }
-  }
   return board_string;
 }
-
 void print_board_string(char* string_board) {
-  for(int i = 0; i < sizeof(string_board) / sizeof(string_board[0]); i++) {
-    char symbol = string_board[0];
+  printf("\n");
+  for(int i = 0; i < (int)strlen(string_board); i++) {
+    char symbol = string_board[i];
     printf("|%c", symbol);
+    if ((i + 1) % 8 == 0) {
+      printf("|\n");
+    }
   } 
-
 }
-
-
-
 
 
