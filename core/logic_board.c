@@ -6,36 +6,7 @@
 #include <ctype.h>
 #include <stdint.h>
 
-enum {
-  white_king = 0,
-  black_king = 1,
-  white_pwan = 2,
-  black_pwan = 3,
-  white_knight = 4,
-  black_knight = 5,
-  white_bishop = 6,
-  black_bishop = 7,
-  white_rook = 8,
-  black_rook = 9,
-  white_queen = 10,
-  black_queen = 11,
-};
-
-
-struct Board {
-  uint64_t bitboards[12];
-  
-  char player_turn;
-
-  bool white_rights[2];
-  bool black_rights[2];
-
-  char en_passant[2];
-
-  unsigned char half_turn;
-  unsigned char counter_turn;
-};
-
+#include "logic.h"
 
 void set_bit(uint64_t* number, int bit) {
   *number |= (1ULL << bit);
@@ -44,21 +15,14 @@ void set_bit(uint64_t* number, int bit) {
 struct Board fen_to_bitboards(char fen_string[]) {
   struct Board board;
   memset(&board, 0, sizeof(board));
-
-  uint64_t white_king_bitboard = 0, black_king_bitboard = 0;
-  uint64_t white_pwan_bitboard = 0, black_pwan_bitboard = 0;
-  uint64_t white_knight_bitboard = 0, black_knight_bitboard = 0;
-  uint64_t white_bishop_bitboard = 0, black_bishop_bitboard = 0;
-  uint64_t white_rook_bitboard = 0, black_rook_bitboard = 0;
-  uint64_t white_queen_bitboard = 0, black_queen_bitboard = 0;
-
+  
   char* token = strtok(fen_string, " ");
   int part = 0;
   while(token != NULL) {
     printf("Token: %s\n ", token);
     if (part == 0) {
       int square = 63;
-      for(int i = 0; i < strlen(token); i++){
+      for(size_t i = 0; i < strlen(token); i++){
         char symbol = token[i];
 
         if(symbol == '/') {
@@ -99,13 +63,17 @@ struct Board fen_to_bitboards(char fen_string[]) {
     }
 
     else if(part == 2) {
-      for(int i = 0; i < strlen(token); i++) {
+      for(size_t i = 0; i < strlen(token); i++) {
         char symbol = token[i];
         switch (symbol) {
           case 'K': board.white_rights[0] = true;
+            break;
           case 'k': board.black_rights[0] = true;
+            break;
           case 'Q': board.white_rights[1] = true;
+            break;
           case 'q': board.black_rights[1] = true;
+            break;
           default: continue;
         }
       }
@@ -139,8 +107,8 @@ struct Board fen_to_bitboards(char fen_string[]) {
 } 
 
 void print_bits(long long num) {
-  for(int i = 1; i <= sizeof(num) * 8; i++) {
-    printf("%d", (num >> ((sizeof(num) * 8) - i)) & 1);
+  for(size_t i = 1; i <= sizeof(num) * 8; i++) {
+    printf("%lld", (num >> ((sizeof(num) * 8) - i)) & 1);
 
     if (i % 8 == 0) {
       printf("\n");
@@ -149,9 +117,9 @@ void print_bits(long long num) {
 }
 
 void print_bitboard(struct Board board) {
-  for(int i = 0; i < sizeof(board.bitboards) / sizeof(board.bitboards[0]); i++) {
+  for(size_t i = 0; i < sizeof(board.bitboards) / sizeof(board.bitboards[0]); i++) {
     long long bitboard = board.bitboards[i];
-      printf("\nBitboard: %d:\n", i);
+      printf("\nBitboard: %zu:\n", i);
       print_bits(bitboard);
   }
 }
@@ -166,7 +134,7 @@ char* join_board_string(struct Board board) {
   size_t num_boards = sizeof(board.bitboards) / sizeof(board.bitboards[0]);
   const int BITS = sizeof(uint64_t) * 8;
 
-  for(int i = 0; i < num_boards; i++) {
+  for(size_t i = 0; i < num_boards; i++) {
     uint64_t bitboard = (uint64_t)board.bitboards[i];
 
     for(int bit = 0; bit < BITS; bit++) {
