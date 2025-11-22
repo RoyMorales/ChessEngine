@@ -62,7 +62,6 @@ ChessTextures load_pieces_textures(SDL_Renderer* renderer) {
               texture_files[i], SDL_GetError());
     }
   }
-
   return textures;
 }
 
@@ -71,35 +70,101 @@ void destroy_pieces_textures(ChessTextures* textures) {
     if (textures->piece_textures[i]) {
       SDL_DestroyTexture(textures->piece_textures[i]);
       textures->piece_textures[i] = NULL;
-      }
-  }
-}
-
-void create_pieces_texture(SDL_Renderer* renderer, ChessTextures* textures, int board_width, int board_height, struct Board* board) {
-  int tile_size = (board_width < board_height ? board_width : board_height) / 8;
-  float piece_scale = 0.7f;
-
-  for (int piece_type = 0; piece_type < 12; piece_type++) {
-    uint64_t bitboard = board->bitboards[piece_type];
-    for (int square = 0; square < 64; square++) {
-      if (bitboard & (1ULL << square)) {
-        int row = 7 - (square / 8);
-        int col = square % 8;
-
-        SDL_FRect dest_rect = {
-          (float)((col * tile_size) + (tile_size * (1 - piece_scale) / 2)),
-          (float)(row * tile_size) + (tile_size * (1 - piece_scale) / 2),
-          (float)tile_size - tile_size * (1 - piece_scale),
-          (float)tile_size - tile_size * (1 - piece_scale)
-        };
-
-        SDL_RenderTexture(renderer, textures->piece_textures[piece_type],
-                          NULL, &dest_rect);
-        }
     }
   }
 }
 
+static inline void render_piece(SDL_Renderer* renderer, SDL_Texture* piece_tex,
+                                int tile_size, float scale, int square) {
+  int row = 7 - (square / 8);
+  int col = square % 8;
+  float offset = tile_size * (1.0f - scale) * 0.5f;
 
+  SDL_FRect dest_rect = {
+    col * tile_size + offset,
+    row * tile_size + offset,
+    tile_size * scale,
+    tile_size * scale
+  };
+  SDL_RenderTexture(renderer, piece_tex, NULL, &dest_rect);
+}
 
+CachedPiecesTexture init_cached_pieces(SDL_Renderer* renderer,
+                                       const ChessTextures* textures,
+                                       const struct Board* board,
+                                       int width, int height) {
+  CachedPiecesTexture cache = {0};
+  cache.width = width;
+  cache.height = height;
+
+  cache.texture = SDL_CreateTexture(renderer,
+                                    SDL_PIXELFORMAT_RGBA8888,
+                                    SDL_TEXTUREACCESS_TARGET,
+                                    width, height);
+
+  SDL_SetTextureBlendMode(cache.texture, SDL_BLENDMODE_BLEND);
+  SDL_SetRenderTarget(renderer, cache.texture);
+  SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
+  SDL_RenderClear(renderer);
+
+  int tile_size = (width < height ? width : height) / 8;
+  float scale = 0.7f;
+
+  for (int piece = 0; piece < 12; piece++) {
+    uint64_t bits = board->bitboards[piece];
+    while (bits) {
+      int square = __builtin_ctzll(bits);
+      bits &= bits - 1;
+      render_piece(renderer, textures->piece_textures[piece], tile_size, scale, square);
+    }
+    cache.bitboards[piece] = board->bitboards[piece];
+  }
+  SDL_SetRenderTarget(renderer, NULL);
+  return cache;
+}
+
+void update_cached_pieces(SDL_Renderer* renderer,
+                          CachedPiecesTexture* cache,
+                          const ChessTextures* textures,
+                          const struct Board* board) {
+  SDL_SetRenderTarget(renderer, cache->texture);
+
+  int tile_size = (cache->width < cache->height ? cache->width : cache->height) / 8;
+  float scale = 0.7f;
+
+  for (int piece = 0; piece < 12; piece++) {
+    uint64_t old_bits = cache->bitboards[piece];
+    uint64_t new_bits = board->bitboards[piece];
+
+    uint64_t diff = old_bits ^ new_bits;
+    if (!diff) continue;
+
+    while (diff) {
+      int square = __builtin_ctzll(diff);
+      diff &= diff - 1;
+
+      int row = 7 - (square / 8);
+      int col = square % 8;
+      SDL_FRect clear_rect = {
+        (float)(col * tile_size),
+        (float)(row * tile_size),
+        (float)tile_size,
+        (float)tile_size
+      };
+      SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
+      SDL_RenderFillRect(renderer, &clear_rect);
+
+      if (new_bits & (1ULL << square)) {
+        render_piece(renderer, textures->piece_textures[piece], tile_size, scale, square);
+      }
+    }
+    cache->bitboards[piece] = new_bits;
+  }
+  SDL_SetRenderTarget(renderer, NULL);
+}
+
+void destroy_cached_pieces(CachedPiecesTexture* cache) {
+  if (cache->texture) SDL_DestroyTexture(cache->texture);
+  cache->texture = NULL;
+}
 

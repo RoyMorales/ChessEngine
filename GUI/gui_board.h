@@ -9,10 +9,27 @@ typedef struct {
     SDL_Texture* piece_textures[12];
 } ChessTextures;
 
+typedef struct {
+    SDL_Texture* texture;
+    uint64_t bitboards[12];
+    int width, height;
+} CachedPiecesTexture;
+
 SDL_Texture* create_chessboard_texture(struct SDL_Renderer* renderer, int board_width, int board_height);
+
 ChessTextures load_pieces_textures(struct SDL_Renderer* renderer);
 void destroy_pieces_textures(ChessTextures* textures);
-void create_pieces_texture(struct SDL_Renderer* renderer, ChessTextures* textures, int board_width, int board_height, struct Board* board);
+
+CachedPiecesTexture init_cached_pieces(struct SDL_Renderer* renderer,
+                                        const ChessTextures* textures,
+                                        const struct Board* board,
+                                        int width, int height);
+void update_cached_pieces(struct SDL_Renderer* renderer,
+                          CachedPiecesTexture* cache,
+                          const ChessTextures* textures,
+                          const struct Board* board);
+void destroy_cached_pieces(CachedPiecesTexture* cache);
+
 
 void mouse_click_to_board_pos(float mouse_x, float mouse_y, int window_width, int window_height, int* board_x, int* board_y);
 

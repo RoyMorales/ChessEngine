@@ -8,9 +8,9 @@
 #include "GUI/gui_board.h"
 #include "core/logic.h"
 
+#define FPS_UPDATE_INTERVAL 1
 #define TARGET_FPS 60
-#define FRAME_TIME_MS (1000.0 / TARGET_FPS)
-#define FPS_UPDATE_INTERVAL 5
+#define FRAME_TIME_MS (1000 / TARGET_FPS)
 
 int main(void) {
   Config config;
@@ -31,25 +31,40 @@ int main(void) {
                                         config.window_height,
                                         config.fullscreen ? SDL_WINDOW_FULLSCREEN : 0);
   if (!window) {
-      fprintf(stderr, "SDL_CreateWindow failed: %s\n", SDL_GetError());
-      SDL_Quit();
-      return 3;
+    fprintf(stderr, "SDL_CreateWindow failed: %s\n", SDL_GetError());
+    SDL_Quit();
+    return 3;
   }
 
-  SDL_Renderer *renderer = SDL_CreateRenderer(window, NULL);
+  SDL_PropertiesID renderer_props = SDL_CreateProperties();
+  SDL_SetPointerProperty(renderer_props, SDL_PROP_RENDERER_CREATE_WINDOW_POINTER, window);
+  SDL_SetNumberProperty(renderer_props, SDL_PROP_RENDERER_CREATE_PRESENT_VSYNC_NUMBER, 1);
+  SDL_SetStringProperty(renderer_props, SDL_PROP_RENDERER_CREATE_NAME_STRING, "opengl");
+
+  SDL_Renderer* renderer = SDL_CreateRendererWithProperties(renderer_props);
+  printf("Renderer backend: %s\n", SDL_GetRendererName(renderer));
+
+  SDL_DestroyProperties(renderer_props);
+
   if (!renderer) {
-      fprintf(stderr, "SDL_CreateRenderer failed: %s\n", SDL_GetError());
-      SDL_DestroyWindow(window);
-      SDL_Quit();
-      return 4;
+    fprintf(stderr, "SDL_CreateRendererWithProperties failed: %s\n", SDL_GetError());
+    SDL_DestroyWindow(window);
+    SDL_Quit();
+    return 4;
   }
+
+  SDL_PropertiesID rprops = SDL_GetRendererProperties(renderer);
+  bool vsync_enabled = SDL_GetNumberProperty(rprops, SDL_PROP_RENDERER_CREATE_PRESENT_VSYNC_NUMBER, 0);
+  printf("VSync enabled: %s\n", vsync_enabled ? "true" : "false");
+
 
   char fen_setup[] = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
   struct Board game_board = fen_to_bitboards(fen_setup); 
 
-  SDL_Event event;
-  SDL_Texture* board_texture = create_chessboard_texture(renderer, config.window_width, config.window_height);
+  SDL_Event event; 
   ChessTextures textures = load_pieces_textures(renderer);
+  SDL_Texture* board_texture = create_chessboard_texture(renderer, config.window_width, config.window_height);
+  CachedPiecesTexture pieces_cache = init_cached_pieces(renderer, &textures, &game_board, config.window_width, config.window_height);
 
   uint64_t frame_start, frame_end, frame_time;
   FPSCounter fps_counter;
@@ -58,6 +73,7 @@ int main(void) {
   int board_x;
   int board_y;
   
+  bool need_redraw = true;
   bool running = true;
   while (running) {
     frame_start = SDL_GetTicks();
@@ -84,22 +100,25 @@ int main(void) {
         }
       }
     
-    SDL_RenderTexture(renderer, board_texture, NULL, NULL);  
-    create_pieces_texture(renderer, &textures, config.window_width, config.window_height, &game_board);
-    SDL_RenderPresent(renderer);
-      
+    if (need_redraw) {
+      SDL_RenderTexture(renderer, board_texture, NULL, NULL);  
+      SDL_RenderTexture(renderer, pieces_cache.texture, NULL, NULL); 
+      SDL_RenderPresent(renderer);
+      need_redraw = false;
+    }
+
     frame_end = SDL_GetTicks();
     frame_time = frame_end - frame_start;
 
     if (frame_time < FRAME_TIME_MS) {
-      SDL_Delay(FRAME_TIME_MS - frame_time);
-    }
+      SDL_Delay(FRAME_TIME_MS - frame_time); // Cap FPS
+    } 
     fps_update_terminal(&fps_counter, FPS_UPDATE_INTERVAL);
   }
 
-
+  destroy_cached_pieces(&pieces_cache);
   destroy_pieces_textures(&textures);
-
+  SDL_DestroyTexture(board_texture);
   SDL_DestroyRenderer(renderer);
   SDL_DestroyWindow(window);
   SDL_Quit();
