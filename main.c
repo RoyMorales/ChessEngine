@@ -8,7 +8,7 @@
 #include "GUI/gui_board.h"
 #include "core/logic.h"
 
-#define FPS_UPDATE_INTERVAL 1
+#define FPS_UPDATE_INTERVAL 10
 #define TARGET_FPS 60
 #define FRAME_TIME_MS (1000 / TARGET_FPS)
 

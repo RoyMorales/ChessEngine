@@ -2,7 +2,7 @@
 CC := gcc
 
 # Source files
-SRC := main.c util/config_reader.c util/fps_counter.c GUI/chessboard.c GUI/events.c core/logic_board.c 
+SRC := main.c util/config_reader.c util/fps_counter.c GUI/chessboard.c GUI/events.c core/board.c 
 
 OBJ := $(SRC:.c=.o)
 
