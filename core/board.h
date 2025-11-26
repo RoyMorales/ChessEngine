@@ -1,7 +1,7 @@
-// Header File for logic board
+// Header file for board
 
-#ifndef LOGIC_H
-#define LOGIC_H
+#ifndef BOARD_H
+#define BOARD_H
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -20,7 +20,7 @@ struct Board {
   uint64_t black_occupied;
   uint64_t all_occupied;
 
-  // ToDo! unity the castling rights with the en passant into a single byte
+  // ToDo! unite the castling rights with the en passant into a single byte
   unsigned char castling_rights;
   unsigned char en_passant_square;
 
@@ -28,6 +28,11 @@ struct Board {
   char player_turn;
   unsigned char half_turn;
   unsigned char counter_turn;
+};
+
+enum {
+  white_player = 'w',
+  black_player = 'b',
 };
 
 enum {
@@ -47,10 +52,7 @@ enum {
 
 
 void update_occupancy(struct Board* board);
-
 struct Board fen_to_bitboards(char fen_string[]);
-char* join_board_string(struct Board board);
-void print_board_string(char* string_board);
 
 #endif
 

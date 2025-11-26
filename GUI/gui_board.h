@@ -1,7 +1,9 @@
 #ifndef GUI_BOARD_H
 #define GUI_BOARD_H
 
-#include "../core/logic.h"
+#include <SDL3/SDL.h>
+
+#include "../core/board.h"
 
 struct SDL_Renderer;
 
@@ -16,6 +18,7 @@ typedef struct {
 } CachedPiecesTexture;
 
 SDL_Texture* create_chessboard_texture(struct SDL_Renderer* renderer, int board_width, int board_height);
+SDL_Texture* create_highlight_texture(struct SDL_Renderer* renderer, int board_width, int board_height, int square);
 
 ChessTextures load_pieces_textures(struct SDL_Renderer* renderer);
 void destroy_pieces_textures(ChessTextures* textures);

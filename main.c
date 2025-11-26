@@ -6,11 +6,14 @@
 
 #include "util/util.h"
 #include "GUI/gui_board.h"
-#include "core/logic.h"
+#include "core/core_util.h"
+#include "core/board.h"
+#include "core/movegen.h"
 
 #define FPS_UPDATE_INTERVAL 10
 #define TARGET_FPS 60
 #define FRAME_TIME_MS (1000 / TARGET_FPS)
+
 
 int main(void) {
   Config config;
@@ -60,23 +63,42 @@ int main(void) {
 
   char fen_setup[] = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
   struct Board game_board = fen_to_bitboards(fen_setup); 
+  update_occupancy(&game_board);
 
   SDL_Event event; 
   ChessTextures textures = load_pieces_textures(renderer);
   SDL_Texture* board_texture = create_chessboard_texture(renderer, config.window_width, config.window_height);
+  SDL_Texture* highlight_texture = create_highlight_texture(renderer, config.window_width, config.window_height, -1);
   CachedPiecesTexture pieces_cache = init_cached_pieces(renderer, &textures, &game_board, config.window_width, config.window_height);
 
+  // FPS management variables
   uint64_t frame_start, frame_end, frame_time;
   FPSCounter fps_counter;
   fps_init(&fps_counter);
 
+  // Board position variables
   int board_x;
   int board_y;
+  int board_index;
   
+  // Main loop variables
   bool need_redraw = true;
   bool running = true;
+  bool generate_moves = true;
+
+  // ToDO! Implement player choice
+  char player = white_player;
+  char opponent = (player == white_player) ? black_player : white_player;
+  uint64_t player_pieces = (player == white_player) ? game_board.white_occupied : game_board.black_occupied; 
+  uint64_t opponent_pieces = (opponent == white_player) ? game_board.white_occupied : game_board.black_occupied;
+
   while (running) {
     frame_start = SDL_GetTicks();
+
+    if (generate_moves) {
+      struct MoveList moves = genrate_board_moves(&game_board);
+      generate_moves = false;
+    }
 
     while (SDL_PollEvent(&event)) {
       switch (event.type) {
@@ -92,7 +114,19 @@ int main(void) {
 
         case SDL_EVENT_MOUSE_BUTTON_DOWN:
           mouse_click_to_board_pos(event.button.x, event.button.y, config.window_width, config.window_height, &board_x, &board_y);
-          printf("Board Position: (%d, %d)\n", board_x, board_y);
+          board_index = (board_y - 1) * 8 + (board_x - 1);
+          printf("Board Position: (%d, %d) ", board_x, board_y);
+          printf("| Square Index: %d\n", board_index);
+
+          if(player_pieces & (1ULL << board_index)) {
+            highlight_texture = create_highlight_texture(renderer, config.window_width, config.window_height, board_index);
+            need_redraw = true;
+          } else {
+            highlight_texture = create_highlight_texture(renderer, config.window_width, config.window_height, -1);
+            need_redraw = true;
+          }
+
+
           break;
 
         default:
@@ -102,6 +136,7 @@ int main(void) {
     
     if (need_redraw) {
       SDL_RenderTexture(renderer, board_texture, NULL, NULL);  
+      SDL_RenderTexture(renderer, highlight_texture, NULL, NULL);
       SDL_RenderTexture(renderer, pieces_cache.texture, NULL, NULL); 
       SDL_RenderPresent(renderer);
       need_redraw = false;
