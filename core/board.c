@@ -7,6 +7,7 @@
 #include <stdint.h>
 
 #include "board.h"
+#include "core_util.h"
 
 // Helper function to set a specific bit in a number
 void set_bit(uint64_t* number, int bit) {
@@ -36,18 +37,23 @@ struct Board fen_to_bitboards(char fen_string[]) {
   
   char* token = strtok(fen_string, " ");
   int part = 0;
+
+  printf("\n----------------------------\n");
   while(token != NULL) {
-    printf("Token: %s\n ", token);
+
     if (part == 0) {
-      int square = 63;
+      int rank = 7;
+      int file = 0;
       for(size_t i = 0; i < strlen(token); i++){
         char symbol = token[i];
 
         if(symbol == '/') {
+          rank--;
+          file = 0;
           continue;
         }
         if(isdigit(symbol)) {
-          square -= symbol - '0';
+          file += symbol - '0';
           continue;
         }
 
@@ -68,16 +74,17 @@ struct Board fen_to_bitboards(char fen_string[]) {
           default: break;
         }
         if (piece_index >= 0) {
+          int square = rank * 8 + file;
           set_bit(&board.bitboards[piece_index], square);
-          square--;
+          file++;
+        }
       }
-      part++;
-      }
+      printf("Finished parsing piece placement.\n");
     }
 
     else if(part == 1) {
-      board.player_turn = token[0];
-      part++;
+      board.player_turn = (token[0] == 'w') ? 0 : 1;
+      printf("Player Turn: %s\n", board.player_turn == 0 ? "White" : "Black");
     }
 
     else if(part == 2) {
@@ -93,7 +100,7 @@ struct Board fen_to_bitboards(char fen_string[]) {
           default: break;  
         }
       }
-      part++;
+      printf("Castling Rights: %u\n", board.castling_rights);
     }
      
     else if(part == 3) {
@@ -107,20 +114,23 @@ struct Board fen_to_bitboards(char fen_string[]) {
           board.en_passant_square = EP_NONE;
         }
       }
-      part++;
+      printf("En Passant Square: %u\n", board.en_passant_square);
     }
 
     else if(part == 4) {
       board.half_turn = token[0] - '0';
-      part++;
+      printf("Half Turn: %u\n", board.half_turn);
     }
 
     else if(part == 5) {
       board.counter_turn = token[0] - '0';   
-      part++;
+      printf("Counter Turn: %u\n", board.counter_turn);
     }
+
+    part ++;
     token = strtok(NULL, " ");
   } 
+  printf("----------------------------\n");
   return board;
 } 
 

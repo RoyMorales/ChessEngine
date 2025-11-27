@@ -69,6 +69,42 @@ SDL_Texture* create_highlight_texture(SDL_Renderer* renderer, int board_width, i
   return highlight_texture;
 }
 
+void draw_piece_highlight_squares(SDL_Renderer* renderer, int width, int height, struct MoveList* moves_list) {
+  int tile_size = (width < height ? width : height) / 8;
+  SDL_SetRenderDrawColor(renderer, 0, 255, 0, 128); // Semi-transparent green
+
+  for (int i = 0; i < moves_list->count; i++) {
+    uint32_t move = moves_list->moves[i];
+    int to_square = (move >> 6) & 0x3F;
+
+    int row = 7 - (to_square / 8);
+    int col = to_square % 8;
+
+    SDL_FRect rect = {
+      (float)(col * tile_size),
+      (float)(row * tile_size),
+      (float)tile_size,
+      (float)tile_size
+    };
+    SDL_RenderFillRect(renderer, &rect);
+  }
+}
+
+SDL_Texture* create_piece_highlight_texture(SDL_Renderer* renderer, int board_width, int board_height, struct MoveList* moves_list) {
+  SDL_Texture* highlight_texture = SDL_CreateTexture(renderer,
+    SDL_PIXELFORMAT_RGBA8888,
+    SDL_TEXTUREACCESS_TARGET,
+    board_width, board_height);
+
+  SDL_SetTextureBlendMode(highlight_texture, SDL_BLENDMODE_BLEND);
+  SDL_SetRenderTarget(renderer, highlight_texture);
+  SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
+  SDL_RenderClear(renderer);
+  draw_piece_highlight_squares(renderer, board_width, board_height, moves_list);
+  SDL_SetRenderTarget(renderer, NULL);
+  return highlight_texture;
+}
+
 // ToDO! Move texture path to config file
 ChessTextures load_pieces_textures(SDL_Renderer* renderer) {
   ChessTextures textures = {0};

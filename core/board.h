@@ -25,14 +25,14 @@ struct Board {
   unsigned char en_passant_square;
 
   // Turn info
-  char player_turn;
+  bool player_turn;
   unsigned char half_turn;
   unsigned char counter_turn;
 };
 
 enum {
-  white_player = 'w',
-  black_player = 'b',
+  white_player = 0,
+  black_player = 1,
 };
 
 enum {

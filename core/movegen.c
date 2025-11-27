@@ -3,6 +3,7 @@
 #include "board.h"
 #include "attack.h"
 #include "movegen.h"
+#include "core_util.h"
 
 void generate_white_pawn_push_moves(uint64_t pawns, struct MoveList* move_list, uint64_t occupancy, uint64_t own_pieces, uint64_t opponent_pieces) {
     while (pawns) {
@@ -123,15 +124,15 @@ void generate_black_pawn_capture_moves(uint64_t pawns, struct MoveList* move_lis
 }
 
 void generate_white_pawn_moves(uint64_t pawns, struct MoveList* move_list, uint64_t occupancy,uint64_t own_pieces, uint64_t opponent_pieces) {
-    void generate_white_pawn_push_moves(uint64_t pawns, struct MoveList* move_list, uint64_t occupancy, uint64_t own_pieces, uint64_t opponent_pieces);
-    void generate_white_pawn_double_push_moves(uint64_t pawns, struct MoveList* move_list, uint64_t occupancy, uint64_t own_pieces, uint64_t opponent_pieces);
-    void generate_white_pawn_capture_moves(uint64_t pawns, struct MoveList* move_list, uint64_t opponent_pieces);
+    generate_white_pawn_push_moves(pawns, move_list,occupancy, own_pieces, opponent_pieces);
+    generate_white_pawn_double_push_moves(pawns, move_list, occupancy, own_pieces, opponent_pieces);
+    generate_white_pawn_capture_moves(pawns, move_list, opponent_pieces);
 }
 
-void generate_black_pawn_moves(uint64_t pawns, struct MoveList* move_list, uint64_t occupancy,uint64_t own_pieces, uint64_t opponent_pieces) {
-    void generate_black_pawn_push_moves(uint64_t pawns, struct MoveList* move_list, uint64_t occupancy, uint64_t own_pieces, uint64_t opponent_pieces);
-    void generate_black_pawn_double_push_moves(uint64_t pawns, struct MoveList* move_list, uint64_t occupancy, uint64_t own_pieces, uint64_t opponent_pieces);
-    void generate_black_pawn_capture_moves(uint64_t pawns, struct MoveList* move_list, uint64_t opponent_pieces);
+void generate_black_pawn_moves(uint64_t pawns, struct MoveList* move_list, uint64_t occupancy, uint64_t own_pieces, uint64_t opponent_pieces) {
+    generate_black_pawn_push_moves(pawns, move_list, occupancy, own_pieces, opponent_pieces);
+    generate_black_pawn_double_push_moves(pawns, move_list, occupancy, own_pieces, opponent_pieces);
+    generate_black_pawn_capture_moves(pawns, move_list, opponent_pieces);
 }
 
 void generate_knight_moves(uint64_t knights, struct MoveList* move_list, uint64_t own_pieces, uint64_t opponent_pieces) {
@@ -158,6 +159,8 @@ void generate_knight_moves(uint64_t knights, struct MoveList* move_list, uint64_
         knights &= knights - 1; // Clear the least significant bit
     }
 }
+
+
 
 
 struct MoveList genrate_board_moves(struct Board* board) {

@@ -9,6 +9,7 @@
 #include "core/core_util.h"
 #include "core/board.h"
 #include "core/movegen.h"
+#include "core/attack.h"
 
 #define FPS_UPDATE_INTERVAL 10
 #define TARGET_FPS 60
@@ -16,6 +17,9 @@
 
 
 int main(void) {
+  printf("\n----------------------------\n");
+  printf("         Chess Engine      \n");
+  printf("----------------------------\n");
   Config config;
   if (config_reader("settings.cfg", &config) != 0) {
     fprintf(stderr, "Failed to read config file\n");
@@ -59,16 +63,19 @@ int main(void) {
   SDL_PropertiesID rprops = SDL_GetRendererProperties(renderer);
   bool vsync_enabled = SDL_GetNumberProperty(rprops, SDL_PROP_RENDERER_CREATE_PRESENT_VSYNC_NUMBER, 0);
   printf("VSync enabled: %s\n", vsync_enabled ? "true" : "false");
+  printf("----------------------------\n");
 
 
   char fen_setup[] = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
   struct Board game_board = fen_to_bitboards(fen_setup); 
   update_occupancy(&game_board);
+  init_attack_tables();
 
   SDL_Event event; 
   ChessTextures textures = load_pieces_textures(renderer);
   SDL_Texture* board_texture = create_chessboard_texture(renderer, config.window_width, config.window_height);
   SDL_Texture* highlight_texture = create_highlight_texture(renderer, config.window_width, config.window_height, -1);
+  SDL_Texture* highlight_piece_texture = NULL;
   CachedPiecesTexture pieces_cache = init_cached_pieces(renderer, &textures, &game_board, config.window_width, config.window_height);
 
   // FPS management variables
@@ -85,6 +92,8 @@ int main(void) {
   bool need_redraw = true;
   bool running = true;
   bool generate_moves = true;
+  struct MoveList moves;
+  struct MoveList piece_move_list;
 
   // ToDO! Implement player choice
   char player = white_player;
@@ -96,7 +105,8 @@ int main(void) {
     frame_start = SDL_GetTicks();
 
     if (generate_moves) {
-      struct MoveList moves = genrate_board_moves(&game_board);
+      moves = genrate_board_moves(&game_board);
+      print_move_list(&moves);
       generate_moves = false;
     }
 
@@ -106,7 +116,7 @@ int main(void) {
           running = false;
           break;
 
-        case SDL_EVENT_KEY_DOWN:
+        case SDL_EVENT_KEY_DOWN:  
           if (event.key.key == SDLK_ESCAPE) {
             running = false;
           }
@@ -114,13 +124,20 @@ int main(void) {
 
         case SDL_EVENT_MOUSE_BUTTON_DOWN:
           mouse_click_to_board_pos(event.button.x, event.button.y, config.window_width, config.window_height, &board_x, &board_y);
-          board_index = (board_y - 1) * 8 + (board_x - 1);
+          board_index = board_y  * 8 + board_x;
           printf("Board Position: (%d, %d) ", board_x, board_y);
           printf("| Square Index: %d\n", board_index);
 
           if(player_pieces & (1ULL << board_index)) {
+            // Highlight selected piece
             highlight_texture = create_highlight_texture(renderer, config.window_width, config.window_height, board_index);
-            need_redraw = true;
+            
+            // Hightlight possible moves
+            piece_move_list = selected_piece_moves(&moves, board_index);
+            print_move_list(&piece_move_list);
+            highlight_piece_texture = create_piece_highlight_texture(renderer, config.window_width, config.window_height, &piece_move_list);
+            need_redraw = true;  
+
           } else {
             highlight_texture = create_highlight_texture(renderer, config.window_width, config.window_height, -1);
             need_redraw = true;
@@ -137,6 +154,7 @@ int main(void) {
     if (need_redraw) {
       SDL_RenderTexture(renderer, board_texture, NULL, NULL);  
       SDL_RenderTexture(renderer, highlight_texture, NULL, NULL);
+      SDL_RenderTexture(renderer, highlight_piece_texture, NULL, NULL);
       SDL_RenderTexture(renderer, pieces_cache.texture, NULL, NULL); 
       SDL_RenderPresent(renderer);
       need_redraw = false;
