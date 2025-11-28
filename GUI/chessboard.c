@@ -106,8 +106,8 @@ SDL_Texture* create_piece_highlight_texture(SDL_Renderer* renderer, int board_wi
 }
 
 // ToDO! Move texture path to config file
-ChessTextures load_pieces_textures(SDL_Renderer* renderer) {
-  ChessTextures textures = {0};
+struct ChessTextures load_pieces_textures(SDL_Renderer* renderer) {
+  struct ChessTextures textures = {0};
 
   const char* texture_files[12] = {
     "resources/pieces/king_white.png",
@@ -134,7 +134,7 @@ ChessTextures load_pieces_textures(SDL_Renderer* renderer) {
   return textures;
 }
 
-void destroy_pieces_textures(ChessTextures* textures) {
+void destroy_pieces_textures(struct ChessTextures* textures) {
   for (int i = 0; i < 12; i++) {
     if (textures->piece_textures[i]) {
       SDL_DestroyTexture(textures->piece_textures[i]);
@@ -159,7 +159,7 @@ static inline void render_piece(SDL_Renderer* renderer, SDL_Texture* piece_tex,
 }
 
 struct CachedPiecesTexture init_cached_pieces(SDL_Renderer* renderer,
-                                       const ChessTextures* textures,
+                                       const struct ChessTextures* textures,
                                        const struct Board* board,
                                        int width, int height) {
   struct CachedPiecesTexture cache = {0};
@@ -194,7 +194,7 @@ struct CachedPiecesTexture init_cached_pieces(SDL_Renderer* renderer,
 
 void update_cached_pieces(SDL_Renderer* renderer,
                           struct CachedPiecesTexture* cache,
-                          const ChessTextures* textures,
+                          const struct ChessTextures* textures,
                           const struct Board* board) {
   SDL_SetRenderTarget(renderer, cache->texture);
 

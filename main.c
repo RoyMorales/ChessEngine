@@ -16,32 +16,6 @@
 #define TARGET_FPS 60
 #define FRAME_TIME_MS (1000 / TARGET_FPS)
 
-struct BoardStateUI{
-    bool need_redraw;
-    bool selected_movable_piece;
-    int board_x;
-    int board_y;
-    int board_index;
-};
-
-struct RenderContext {
-    SDL_Renderer* renderer;
-    SDL_Texture* board_texture;
-    SDL_Texture* highlight_texture;
-    SDL_Texture* highlight_piece_texture;
-    struct CachedPiecesTexture pieces_cache;
-};
-
-struct MoveData {
-    struct MoveList* moves;
-    struct MoveList* piece_move_list;
-};
-
-struct SideData {
-    uint64_t opponent_pieces;
-    uint64_t player_pieces;
-};
-
 
 int main(void) {
   struct Config config; 
@@ -101,14 +75,16 @@ int main(void) {
   printf("----------------------------\n");
 
   // Initialize game board from FEN
-  char fen_setup[] = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+  //char fen_setup[] = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+  char fen_setup[] = "r1bk3r/p2pBpNp/n4n2/1p1NP2P/6P1/3P4/P1P1K3/q5b1 w KQkq - 0 1";
+  
   struct Board game_board = fen_to_bitboards(fen_setup); 
   update_occupancy(&game_board);
   init_attack_tables();
 
   // Load GUI assets
   SDL_Event event; 
-  ChessTextures textures = load_pieces_textures(render_context.renderer);
+  struct ChessTextures textures = load_pieces_textures(render_context.renderer);
   render_context.board_texture = create_chessboard_texture(render_context.renderer, config.window_width, config.window_height);
   render_context.highlight_texture = create_highlight_texture(render_context.renderer, config.window_width, config.window_height, -1);
   render_context.highlight_piece_texture = NULL;
@@ -136,12 +112,14 @@ int main(void) {
   while (running) {
     frame_start = SDL_GetTicks();
 
-    //main_switch_event(&event, &running, &generate_moves, &board_state_ui, &move_data, &render_context, &config, &side_data);
+    while (SDL_PollEvent(&event)) {
+      main_switch_event(&event, &running, &generate_moves,
+                        &board_state_ui, &move_data, &render_context, &config, &side_data);
+      }
 
     if (generate_moves) {
-      struct MoveList generated_moves = genrate_board_moves(&game_board);
-      move_data.moves = &generated_moves; 
-      print_move_list(move_data.moves);
+      move_data.moves = genrate_board_moves(&game_board);
+      print_move_list(&move_data.moves);
       generate_moves = false;
     }
 
@@ -163,7 +141,6 @@ int main(void) {
       board_state_ui.selected_movable_piece = false;
       generate_moves = true;
     }
-
 
     frame_end = SDL_GetTicks();
     frame_time = frame_end - frame_start;
