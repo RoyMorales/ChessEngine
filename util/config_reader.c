@@ -6,7 +6,7 @@
  #include <stdlib.h>
  #include <string.h>
 
-int config_reader(const char* filename, Config* config) {
+int config_reader(const char* filename, struct Config* config) {
     FILE* file = fopen(filename, "r");
     if (file == NULL) {
         perror("Failed to open config file");

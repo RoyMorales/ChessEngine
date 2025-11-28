@@ -3,13 +3,13 @@
 
 #include "util.h"
 
-void fps_init(FPSCounter* c) {
+void fps_init(struct FPSCounter* c) {
     c->last_time = SDL_GetPerformanceCounter();
     c->frame_count = 0;
     c->fps = 0.0;
 }
 
-void fps_update_terminal(FPSCounter* c, double x) {
+void fps_update_terminal(struct FPSCounter* c, double x) {
     c->frame_count++;
 
     uint64_t now = SDL_GetPerformanceCounter();

@@ -4,7 +4,7 @@ CC := gcc
 # Source files
 SRC := main.c util/config_reader.c util/fps_counter.c \
 			  GUI/chessboard.c GUI/events.c \
-			  core/core_util.c core/board.c core/attack.c core/movegen.c
+			  core/core_util.c core/board.c core/attack.c core/movegen.c core/move_apply.c
 
 OBJ := $(SRC:.c=.o)
 

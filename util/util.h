@@ -3,21 +3,21 @@
 
 #include <stdint.h>
 
-typedef struct {
+struct Config {
     int window_width;
     int window_height;
     int fullscreen;
-} Config;
+};
 
-typedef struct {
+struct FPSCounter {
     uint64_t last_time;
     uint64_t frame_count;
     double fps;
-} FPSCounter;
+};
 
-int config_reader(const char* filename, Config* config);
-void fps_init(FPSCounter* c);
-void fps_update_terminal(FPSCounter* c, double x);
+int config_reader(const char* filename, struct Config* config);
+void fps_init(struct FPSCounter* c);
+void fps_update_terminal(struct FPSCounter* c, double x);
 
 #endif
 

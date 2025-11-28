@@ -10,17 +10,51 @@
 #include "core/board.h"
 #include "core/movegen.h"
 #include "core/attack.h"
+#include "core/move_apply.h"
 
 #define FPS_UPDATE_INTERVAL 10
 #define TARGET_FPS 60
 #define FRAME_TIME_MS (1000 / TARGET_FPS)
 
+struct BoardStateUI{
+    bool need_redraw;
+    bool selected_movable_piece;
+    int board_x;
+    int board_y;
+    int board_index;
+};
+
+struct RenderContext {
+    SDL_Renderer* renderer;
+    SDL_Texture* board_texture;
+    SDL_Texture* highlight_texture;
+    SDL_Texture* highlight_piece_texture;
+    struct CachedPiecesTexture pieces_cache;
+};
+
+struct MoveData {
+    struct MoveList* moves;
+    struct MoveList* piece_move_list;
+};
+
+struct SideData {
+    uint64_t opponent_pieces;
+    uint64_t player_pieces;
+};
+
 
 int main(void) {
+  struct Config config; 
+  struct FPSCounter fps_counter;
+  struct BoardStateUI board_state_ui;
+  struct RenderContext render_context;
+  struct MoveData move_data;
+  struct SideData side_data;
+
   printf("\n----------------------------\n");
   printf("         Chess Engine      \n");
   printf("----------------------------\n");
-  Config config;
+  
   if (config_reader("settings.cfg", &config) != 0) {
     fprintf(stderr, "Failed to read config file\n");
     SDL_Quit();
@@ -48,131 +82,101 @@ int main(void) {
   SDL_SetNumberProperty(renderer_props, SDL_PROP_RENDERER_CREATE_PRESENT_VSYNC_NUMBER, 1);
   SDL_SetStringProperty(renderer_props, SDL_PROP_RENDERER_CREATE_NAME_STRING, "opengl");
 
-  SDL_Renderer* renderer = SDL_CreateRendererWithProperties(renderer_props);
-  printf("Renderer backend: %s\n", SDL_GetRendererName(renderer));
+  render_context.renderer = SDL_CreateRendererWithProperties(renderer_props);
+  printf("Renderer backend: %s\n", SDL_GetRendererName(render_context.renderer));
 
   SDL_DestroyProperties(renderer_props);
 
-  if (!renderer) {
+  if (!render_context.renderer) {
     fprintf(stderr, "SDL_CreateRendererWithProperties failed: %s\n", SDL_GetError());
     SDL_DestroyWindow(window);
     SDL_Quit();
     return 4;
   }
 
-  SDL_PropertiesID rprops = SDL_GetRendererProperties(renderer);
+  SDL_PropertiesID rprops = SDL_GetRendererProperties(render_context.renderer);
   bool vsync_enabled = SDL_GetNumberProperty(rprops, SDL_PROP_RENDERER_CREATE_PRESENT_VSYNC_NUMBER, 0);
   printf("VSync enabled: %s\n", vsync_enabled ? "true" : "false");
+  
   printf("----------------------------\n");
 
-
+  // Initialize game board from FEN
   char fen_setup[] = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
   struct Board game_board = fen_to_bitboards(fen_setup); 
   update_occupancy(&game_board);
   init_attack_tables();
 
+  // Load GUI assets
   SDL_Event event; 
-  ChessTextures textures = load_pieces_textures(renderer);
-  SDL_Texture* board_texture = create_chessboard_texture(renderer, config.window_width, config.window_height);
-  SDL_Texture* highlight_texture = create_highlight_texture(renderer, config.window_width, config.window_height, -1);
-  SDL_Texture* highlight_piece_texture = NULL;
-  CachedPiecesTexture pieces_cache = init_cached_pieces(renderer, &textures, &game_board, config.window_width, config.window_height);
+  ChessTextures textures = load_pieces_textures(render_context.renderer);
+  render_context.board_texture = create_chessboard_texture(render_context.renderer, config.window_width, config.window_height);
+  render_context.highlight_texture = create_highlight_texture(render_context.renderer, config.window_width, config.window_height, -1);
+  render_context.highlight_piece_texture = NULL;
+  render_context.pieces_cache = init_cached_pieces(render_context.renderer, &textures, &game_board, config.window_width, config.window_height);
 
   // FPS management variables
   uint64_t frame_start, frame_end, frame_time;
-  FPSCounter fps_counter;
   fps_init(&fps_counter);
 
-  // Board position variables
-  int board_x;
-  int board_y;
-  int board_index;
-  
   // Main loop variables
-  bool need_redraw = true;
-  bool running = true;
-  bool generate_moves = true;
-  struct MoveList moves;
-  struct MoveList piece_move_list;
+  board_state_ui.need_redraw = true;
+  board_state_ui.selected_movable_piece = false;
 
   // ToDO! Implement player choice
   char player = white_player;
   char opponent = (player == white_player) ? black_player : white_player;
   uint64_t player_pieces = (player == white_player) ? game_board.white_occupied : game_board.black_occupied; 
   uint64_t opponent_pieces = (opponent == white_player) ? game_board.white_occupied : game_board.black_occupied;
+  side_data.player_pieces = player_pieces;
+  side_data.opponent_pieces = opponent_pieces;
+
+  bool running = true;
+  bool generate_moves = false;
 
   while (running) {
     frame_start = SDL_GetTicks();
 
+    //main_switch_event(&event, &running, &generate_moves, &board_state_ui, &move_data, &render_context, &config, &side_data);
+
     if (generate_moves) {
-      moves = genrate_board_moves(&game_board);
-      print_move_list(&moves);
+      struct MoveList generated_moves = genrate_board_moves(&game_board);
+      move_data.moves = &generated_moves; 
+      print_move_list(move_data.moves);
       generate_moves = false;
     }
 
-    while (SDL_PollEvent(&event)) {
-      switch (event.type) {
-        case SDL_EVENT_QUIT:
-          running = false;
-          break;
-
-        case SDL_EVENT_KEY_DOWN:  
-          if (event.key.key == SDLK_ESCAPE) {
-            running = false;
-          }
-          break;
-
-        case SDL_EVENT_MOUSE_BUTTON_DOWN:
-          mouse_click_to_board_pos(event.button.x, event.button.y, config.window_width, config.window_height, &board_x, &board_y);
-          board_index = board_y  * 8 + board_x;
-          printf("Board Position: (%d, %d) ", board_x, board_y);
-          printf("| Square Index: %d\n", board_index);
-
-          if(player_pieces & (1ULL << board_index)) {
-            // Highlight selected piece
-            highlight_texture = create_highlight_texture(renderer, config.window_width, config.window_height, board_index);
-            
-            // Hightlight possible moves
-            piece_move_list = selected_piece_moves(&moves, board_index);
-            print_move_list(&piece_move_list);
-            highlight_piece_texture = create_piece_highlight_texture(renderer, config.window_width, config.window_height, &piece_move_list);
-            need_redraw = true;  
-
-          } else {
-            highlight_texture = create_highlight_texture(renderer, config.window_width, config.window_height, -1);
-            need_redraw = true;
-          }
-
-
-          break;
-
-        default:
-            break;
-        }
-      }
-    
-    if (need_redraw) {
-      SDL_RenderTexture(renderer, board_texture, NULL, NULL);  
-      SDL_RenderTexture(renderer, highlight_texture, NULL, NULL);
-      SDL_RenderTexture(renderer, highlight_piece_texture, NULL, NULL);
-      SDL_RenderTexture(renderer, pieces_cache.texture, NULL, NULL); 
-      SDL_RenderPresent(renderer);
-      need_redraw = false;
+    if (board_state_ui.need_redraw) {
+      SDL_RenderTexture(render_context.renderer, render_context.board_texture, NULL, NULL);  
+      SDL_RenderTexture(render_context.renderer, render_context.highlight_texture, NULL, NULL);
+      SDL_RenderTexture(render_context.renderer, render_context.highlight_piece_texture, NULL, NULL);
+      SDL_RenderTexture(render_context.renderer, render_context.pieces_cache.texture, NULL, NULL); 
+      SDL_RenderPresent(render_context.renderer);
+      board_state_ui.need_redraw = false;
     }
+
+    if(board_state_ui.selected_movable_piece) {
+      // ToDo! Change move selection later.
+      //apply_move(&game_board, move_data.piece_move_list.moves[0]);
+      update_occupancy(&game_board);
+      update_cached_pieces(render_context.renderer, &render_context.pieces_cache, &textures, &game_board);
+      board_state_ui.need_redraw = true;
+      board_state_ui.selected_movable_piece = false;
+      generate_moves = true;
+    }
+
 
     frame_end = SDL_GetTicks();
     frame_time = frame_end - frame_start;
-
     if (frame_time < FRAME_TIME_MS) {
       SDL_Delay(FRAME_TIME_MS - frame_time); // Cap FPS
     } 
     fps_update_terminal(&fps_counter, FPS_UPDATE_INTERVAL);
   }
 
-  destroy_cached_pieces(&pieces_cache);
+  SDL_DestroyTexture(render_context.board_texture);
+  SDL_DestroyRenderer(render_context.renderer);
+  destroy_cached_pieces(&render_context.pieces_cache);
   destroy_pieces_textures(&textures);
-  SDL_DestroyTexture(board_texture);
-  SDL_DestroyRenderer(renderer);
   SDL_DestroyWindow(window);
   SDL_Quit();
 

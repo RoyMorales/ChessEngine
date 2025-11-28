@@ -158,11 +158,11 @@ static inline void render_piece(SDL_Renderer* renderer, SDL_Texture* piece_tex,
   SDL_RenderTexture(renderer, piece_tex, NULL, &dest_rect);
 }
 
-CachedPiecesTexture init_cached_pieces(SDL_Renderer* renderer,
+struct CachedPiecesTexture init_cached_pieces(SDL_Renderer* renderer,
                                        const ChessTextures* textures,
                                        const struct Board* board,
                                        int width, int height) {
-  CachedPiecesTexture cache = {0};
+  struct CachedPiecesTexture cache = {0};
   cache.width = width;
   cache.height = height;
 
@@ -193,7 +193,7 @@ CachedPiecesTexture init_cached_pieces(SDL_Renderer* renderer,
 }
 
 void update_cached_pieces(SDL_Renderer* renderer,
-                          CachedPiecesTexture* cache,
+                          struct CachedPiecesTexture* cache,
                           const ChessTextures* textures,
                           const struct Board* board) {
   SDL_SetRenderTarget(renderer, cache->texture);
@@ -232,7 +232,7 @@ void update_cached_pieces(SDL_Renderer* renderer,
   SDL_SetRenderTarget(renderer, NULL);
 }
 
-void destroy_cached_pieces(CachedPiecesTexture* cache) {
+void destroy_cached_pieces(struct CachedPiecesTexture* cache) {
   if (cache->texture) SDL_DestroyTexture(cache->texture);
   cache->texture = NULL;
 }
