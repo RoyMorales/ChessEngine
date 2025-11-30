@@ -13,28 +13,33 @@
 #define EP_NONE   0xFF  // No en passant available
 
 
+// 104 Bytes total
 struct Board {
   // Bitboards for each piece type
-  uint64_t bitboards[12]; 
-  uint64_t white_occupied;
-  uint64_t black_occupied;
-  uint64_t all_occupied;
+  uint64_t bitboards[12]; // 8 Bytes * 12 piece types = 96 Bytes 
+  uint64_t white_occupied; // 1 Byte
+  uint64_t black_occupied; // 1 Byte
+  uint64_t all_occupied; //  1 Byte
 
   // ToDo! unite the castling rights with the en passant into a single byte
-  unsigned char castling_rights;
-  unsigned char en_passant_square;
+  unsigned char castling_rights; // 1 Byte
+  unsigned char en_passant_square; // 1 Byte
 
   // Turn info
-  bool player_turn;
-  unsigned char half_turn;
-  unsigned char counter_turn;
+  bool player_turn; // 1 Byte
+  unsigned char half_turn; // 1 Byte
+  unsigned char counter_turn; // 1 Byte
 };
 
+// Player colors
 enum {
   white_player = 0,
   black_player = 1,
 };
 
+// Piece indices
+// White pieces: pair
+// Black pieces: odd
 enum {
   white_king = 0,
   black_king = 1,

@@ -21,25 +21,35 @@ void mouse_click_to_board_pos(float mouse_x, float mouse_y, int window_width, in
   }
 }
 
-// Creates MoveList from the original MoveList that do not originate from the selected square
-struct MoveList* selected_piece_moves(struct MoveList* moves_list, int board_index) {
-    struct MoveList* filtered_moves = malloc(sizeof(struct MoveList));
-    filtered_moves->count = 0;
+struct MoveList* select_pieces_moves(struct MoveList* moves_list, int board_index) {
+  struct MoveList* piece_moves = malloc(sizeof(struct MoveList));
+  piece_moves->count = 0;
 
-    for (int i = 0; i < moves_list->count; i++) {
-        uint32_t move = moves_list->moves[i];
-        int from_square = move & 0x3F; // Extract bits 0-5 for from square
-
-        if (from_square == board_index) {
-            filtered_moves->moves[filtered_moves->count++] = move;
-        }
+  for (int i = 0; i < moves_list->count; i++) {
+    uint32_t move = moves_list->moves[i];
+    int from_square = move & 0x3F; // Bits 0-5
+    if (from_square == board_index) {
+      piece_moves->moves[piece_moves->count++] = move;
     }
-    return filtered_moves;
+  }
+  return piece_moves;
+}
+
+uint32_t select_move_from_list(struct MoveList* moves_list, int board_index) {
+  for (int i = 0; i < moves_list->count; i++) {
+    uint32_t move = moves_list->moves[i];
+    int to_square = (move >> 6) & 0x3F; // Bits 6-11
+    if (to_square == board_index) {
+      return move;
+    }
+  }
+  return 0; // Return 0 if no move found
 }
 
 
-void main_switch_event(SDL_Event* event, bool* running, bool* generate_moves, struct BoardStateUI* board_state_ui,
-                      struct MoveData* move_data, struct RenderContext* render_context,
+void main_switch_event(SDL_Event* event, bool* running, uint32_t *move,
+                      struct MoveList* move_list, struct MoveList* move_list_piece, 
+                      struct BoardStateUI* board_state_ui, struct RenderContext* render_context, 
                       struct Config* config, struct SideData* side_data){
 
   switch (event->type) {
@@ -61,23 +71,35 @@ void main_switch_event(SDL_Event* event, bool* running, bool* generate_moves, st
       printf("Board Position: (%d, %d) ", board_state_ui->board_x, board_state_ui->board_y);
       printf("| Square Index: %d\n", board_state_ui->board_index);
 
-      if(side_data->player_pieces & (1ULL << board_state_ui->board_index)) {
-        // Highlight selected piece
-        render_context->highlight_texture = create_highlight_texture(render_context->renderer, config->window_width, config->window_height, board_state_ui->board_index);
-        
-        // Hightlight possible moves
-        move_data->piece_move_list = selected_piece_moves(&move_data->moves, board_state_ui->board_index);
-        print_move_list(move_data->piece_move_list);
-        render_context->highlight_piece_texture = create_piece_highlight_texture(render_context->renderer, 
-                                                                config->window_width, config->window_height, 
-                                                                move_data->piece_move_list);
-        board_state_ui->need_redraw = true;  
-        board_state_ui->selected_movable_piece = true;
+      if(board_state_ui->selected_movable_piece == true) {
+        uint32_t selected_move = select_move_from_list(move_list_piece, board_state_ui->board_index);
 
+        if(selected_move) { 
+          board_state_ui->piece_moved = true;
+          *move = selected_move;
+        } else {
+          printf("No valid move to that square.\n");  
+        }
+        render_context->highlight_texture = create_highlight_texture(render_context->renderer, config->window_width, config->window_height, -1);
+        board_state_ui->selected_movable_piece = false;
+        render_context->highlight_piece_texture = NULL;
+        board_state_ui->need_redraw = true;
+        break;
+      }
+
+      // Select piece if it belongs to the player
+      if(side_data->player_pieces & (1ULL << board_state_ui->board_index)) {
+        // Highlight selected piece 
+        *move_list_piece = *select_pieces_moves(move_list, board_state_ui->board_index);
+        render_context->highlight_texture = create_highlight_texture(render_context->renderer, config->window_width, config->window_height, board_state_ui->board_index);
+        render_context->highlight_piece_texture = create_piece_highlight_texture(render_context->renderer, config->window_width, config->window_height, move_list_piece);
+        //print_move_list(move_list_piece);
+        board_state_ui->selected_movable_piece = true;
       } else {
         render_context->highlight_texture = create_highlight_texture(render_context->renderer, config->window_width, config->window_height, -1);
-        board_state_ui->need_redraw = true;
+        render_context->highlight_piece_texture = NULL;
       }
+      board_state_ui->need_redraw = true;
       break;
 
     default:

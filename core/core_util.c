@@ -7,6 +7,11 @@
 
 #include "core_util.h"
 
+// Function to clear the console screen
+void clear_screen() {
+  system("clear");
+}
+
 // Helper function to print bits of a number
 void print_bits(uint64_t num) {
   for (int rank = 7; rank >= 0; rank--) { // rank 8 → rank 1
@@ -79,7 +84,7 @@ void print_board_string(char* string_board) {
 }
 
 void print_move_list(struct MoveList* move_list) {
-  printf("\n-----------------------------\n");
+  printf("-----------------------------\n");
   printf("Move List (Total Moves: %d):\n", move_list->count);
   for (int i = 0; i < move_list->count; i++) {
     uint32_t move = move_list->moves[i];

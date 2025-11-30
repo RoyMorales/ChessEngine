@@ -22,8 +22,10 @@ int main(void) {
   struct FPSCounter fps_counter;
   struct BoardStateUI board_state_ui;
   struct RenderContext render_context;
-  struct MoveData move_data;
   struct SideData side_data;
+
+  struct MoveList move_list;
+  struct MoveList move_list_piece;
 
   printf("\n----------------------------\n");
   printf("         Chess Engine      \n");
@@ -75,8 +77,9 @@ int main(void) {
   printf("----------------------------\n");
 
   // Initialize game board from FEN
-  //char fen_setup[] = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-  char fen_setup[] = "r1bk3r/p2pBpNp/n4n2/1p1NP2P/6P1/3P4/P1P1K3/q5b1 w KQkq - 0 1";
+  char fen_setup[] = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+  //char fen_setup[] = "r1bk3r/p2pBpNp/n4n2/1p1NP2P/6P1/3P4/P1P1K3/q5b1 w KQkq - 0 1";
+  //char fen_setup[] = "8/8/8/3N4/8/8/8/7N w KQkq - 0 1";
   
   struct Board game_board = fen_to_bitboards(fen_setup); 
   update_occupancy(&game_board);
@@ -97,6 +100,7 @@ int main(void) {
   // Main loop variables
   board_state_ui.need_redraw = true;
   board_state_ui.selected_movable_piece = false;
+  board_state_ui.piece_moved = false;
 
   // ToDO! Implement player choice
   char player = white_player;
@@ -107,22 +111,29 @@ int main(void) {
   side_data.opponent_pieces = opponent_pieces;
 
   bool running = true;
-  bool generate_moves = false;
+  bool generate_moves = true;
+  uint32_t move = 0;
 
   while (running) {
     frame_start = SDL_GetTicks();
 
-    while (SDL_PollEvent(&event)) {
-      main_switch_event(&event, &running, &generate_moves,
-                        &board_state_ui, &move_data, &render_context, &config, &side_data);
-      }
-
+    // Generate moves if needed
     if (generate_moves) {
-      move_data.moves = genrate_board_moves(&game_board);
-      print_move_list(&move_data.moves);
+      move_list = genrate_board_moves(&game_board);
+      printf("----------------------------\n");
+      printf("Generated %d moves for player %s\n", move_list.count, (game_board.player_turn == white_player) ? "White" : "Black");
+      printf("----------------------------\n");
+      //print_move_list(&move_list);
       generate_moves = false;
     }
 
+    // Event handling
+    while (SDL_PollEvent(&event)) {
+      main_switch_event(&event, &running, &move, &move_list, &move_list_piece,
+                        &board_state_ui, &render_context, &config, &side_data);
+      }
+
+    // Redraw if needed
     if (board_state_ui.need_redraw) {
       SDL_RenderTexture(render_context.renderer, render_context.board_texture, NULL, NULL);  
       SDL_RenderTexture(render_context.renderer, render_context.highlight_texture, NULL, NULL);
@@ -132,13 +143,21 @@ int main(void) {
       board_state_ui.need_redraw = false;
     }
 
-    if(board_state_ui.selected_movable_piece) {
-      // ToDo! Change move selection later.
-      //apply_move(&game_board, move_data.piece_move_list.moves[0]);
+    // Apply move if piece was moved
+    if(board_state_ui.piece_moved) {
+      printf("Selected Move: From %d to %d\n\n", move & 0x3F, (move >> 6) & 0x3F);
+      apply_move(&game_board, move);
       update_occupancy(&game_board);
-      update_cached_pieces(render_context.renderer, &render_context.pieces_cache, &textures, &game_board);
+
+      destroy_cached_pieces(&render_context.pieces_cache);
+      render_context.pieces_cache = init_cached_pieces(render_context.renderer, &textures, &game_board, 
+                                                      config.window_height, config.window_width);
+
+      side_data.player_pieces = (game_board.player_turn == white_player) ? game_board.white_occupied : game_board.black_occupied; 
+      side_data.opponent_pieces = (game_board.player_turn == white_player) ? game_board.black_occupied : game_board.white_occupied;
+      
+      board_state_ui.piece_moved = false;
       board_state_ui.need_redraw = true;
-      board_state_ui.selected_movable_piece = false;
       generate_moves = true;
     }
 
@@ -150,10 +169,10 @@ int main(void) {
     fps_update_terminal(&fps_counter, FPS_UPDATE_INTERVAL);
   }
 
+  destroy_pieces_textures(&textures);
+  destroy_cached_pieces(&render_context.pieces_cache); 
   SDL_DestroyTexture(render_context.board_texture);
   SDL_DestroyRenderer(render_context.renderer);
-  destroy_cached_pieces(&render_context.pieces_cache);
-  destroy_pieces_textures(&textures);
   SDL_DestroyWindow(window);
   SDL_Quit();
 

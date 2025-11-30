@@ -9,6 +9,8 @@
 #include "board.h"
 #include "movegen.h"
 
+
+void clear_screen();
 void print_bits(uint64_t bitboard);
 void print_bitboard(struct Board board);
 char* join_board_string(struct Board board);

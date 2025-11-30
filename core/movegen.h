@@ -5,6 +5,9 @@
 
 #include <stdint.h>
 
+#define MAX_MOVES 256
+
+
 // uint32_t move representation:
 // Bits 0-5:   From square (0-63)
 // Bits 6-11:  To square (0-63)
@@ -13,7 +16,7 @@
 // Bits 20-31: Unused -> for future use
 
 struct MoveList {
-    uint32_t moves[256];
+    uint32_t moves[MAX_MOVES];
     int count;
 };
 

@@ -192,48 +192,7 @@ struct CachedPiecesTexture init_cached_pieces(SDL_Renderer* renderer,
   return cache;
 }
 
-void update_cached_pieces(SDL_Renderer* renderer,
-                          struct CachedPiecesTexture* cache,
-                          const struct ChessTextures* textures,
-                          const struct Board* board) {
-  SDL_SetRenderTarget(renderer, cache->texture);
-
-  int tile_size = (cache->width < cache->height ? cache->width : cache->height) / 8;
-  float scale = 0.7f;
-
-  for (int piece = 0; piece < 12; piece++) {
-    uint64_t old_bits = cache->bitboards[piece];
-    uint64_t new_bits = board->bitboards[piece];
-
-    uint64_t diff = old_bits ^ new_bits;
-    if (!diff) continue;
-
-    while (diff) {
-      int square = __builtin_ctzll(diff);
-      diff &= diff - 1;
-
-      int row = 7 - (square / 8);
-      int col = square % 8;
-      SDL_FRect clear_rect = {
-        (float)(col * tile_size),
-        (float)(row * tile_size),
-        (float)tile_size,
-        (float)tile_size
-      };
-      SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
-      SDL_RenderFillRect(renderer, &clear_rect);
-
-      if (new_bits & (1ULL << square)) {
-        render_piece(renderer, textures->piece_textures[piece], tile_size, scale, square);
-      }
-    }
-    cache->bitboards[piece] = new_bits;
-  }
-  SDL_SetRenderTarget(renderer, NULL);
-}
-
 void destroy_cached_pieces(struct CachedPiecesTexture* cache) {
   if (cache->texture) SDL_DestroyTexture(cache->texture);
   cache->texture = NULL;
 }
-

@@ -9,7 +9,6 @@
 
 struct SDL_Renderer;
 struct BoardStateUI;
-struct MoveData;
 struct RenderContext;
 struct Config;
 struct SideData;
@@ -24,10 +23,10 @@ struct CachedPiecesTexture{
     int width, height;
 };
 
-
 struct BoardStateUI{
     bool need_redraw;
     bool selected_movable_piece;
+    bool piece_moved;
     int board_x;
     int board_y;
     int board_index;
@@ -39,11 +38,6 @@ struct RenderContext {
     SDL_Texture* highlight_texture;
     SDL_Texture* highlight_piece_texture;
     struct CachedPiecesTexture pieces_cache;
-};
-
-struct MoveData {
-    struct MoveList moves;
-    struct MoveList* piece_move_list;
 };
 
 struct SideData {
@@ -62,17 +56,18 @@ struct CachedPiecesTexture init_cached_pieces(struct SDL_Renderer* renderer,
                                         const struct ChessTextures* textures,
                                         const struct Board* board,
                                         int width, int height);
-void update_cached_pieces(struct SDL_Renderer* renderer,
-                          struct CachedPiecesTexture* cache,
-                          const struct ChessTextures* textures,
-                          const struct Board* board);
 void destroy_cached_pieces(struct CachedPiecesTexture* cache);
-
-void main_switch_event(SDL_Event* event, bool* running, bool* generate_moves, struct BoardStateUI* board_state_ui,
-                      struct MoveData* move_data, struct RenderContext* render_context,
-                      struct Config* config, struct SideData* side_data);
+void main_switch_event(SDL_Event* event, bool* running, uint32_t* move, struct MoveList* move_list, struct MoveList* move_list_piece,
+                    struct BoardStateUI* board_state_ui, struct RenderContext* render_context, struct Config* config, struct SideData* side_data);
 void mouse_click_to_board_pos(float mouse_x, float mouse_y, int window_width, int window_height, int* board_x, int* board_y);
-struct MoveList* selected_piece_moves(struct MoveList* moves_list, int board_index);
+struct MoveList* select_pieces_moves(struct MoveList* move_list, int board_index);
+uint32_t select_move_from_list(struct MoveList* move_list, int board_index);
+void fast_update_piece_cache(struct RenderContext* render_context,
+                             const struct ChessTextures* textures,
+                             const struct Board* board,
+                             uint32_t move,
+                             int window_width,
+                             int window_height);
 
 #endif 
 

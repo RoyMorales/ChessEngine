@@ -130,7 +130,7 @@ struct Board fen_to_bitboards(char fen_string[]) {
     part ++;
     token = strtok(NULL, " ");
   } 
-  printf("----------------------------\n");
+  printf("----------------------------\n\n");
   return board;
 } 
 
