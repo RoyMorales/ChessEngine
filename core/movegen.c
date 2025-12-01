@@ -34,35 +34,127 @@ void generate_king_moves(uint64_t kings, struct MoveList* move_list, uint64_t ow
 
 void generate_white_pawn_push_moves(uint64_t pawns, struct MoveList* move_list, uint64_t occupancy) {
     while (pawns) {
-        int from_square = __builtin_ctzll(pawns);
-        int to_square = from_square + 8;
+        int from = __builtin_ctzll(pawns);
+        pawns &= pawns - 1;
 
-        if (to_square < 64 && !(occupancy & (1ULL << to_square))) {
+        int to = from + 8;
+        if (to >= 64 || (occupancy & (1ULL << to))) continue;
+
+        // Promotion
+        if (to >= 56) {
+            int promo_pieces[4] = {PROMOTION_QUEEN, PROMOTION_ROOK, PROMOTION_BISHOP, PROMOTION_KNIGHT};
+            for (int i = 0; i < 4; i++) {
+                uint32_t move = 0;
+                move |= from;
+                move |= (to << 6);
+                move |= (promo_pieces[i] << 12);
+                move_list->moves[move_list->count++] = move;
+            }
+        } else {
             uint32_t move = 0;
-            move |= from_square;               // From square
-            move |= (to_square << 6);         // To square
-
+            move |= from;
+            move |= (to << 6);
             move_list->moves[move_list->count++] = move;
         }
-        pawns &= pawns - 1; // Clear the least significant bit
     }
 }
+
 
 void generate_black_pawn_push_moves(uint64_t pawns, struct MoveList* move_list, uint64_t occupancy) {
     while (pawns) {
-        int from_square = __builtin_ctzll(pawns);
-        int to_square = from_square - 8;
+        int from = __builtin_ctzll(pawns);
+        pawns &= pawns - 1;
 
-        if (to_square >= 0 && !(occupancy & (1ULL << to_square))) {
+        int to = from - 8;
+        if (to < 0 || (occupancy & (1ULL << to))) continue;
+
+        // Promotion
+        if (to <= 7) {
+            int promo_pieces[4] = {PROMOTION_QUEEN, PROMOTION_ROOK, PROMOTION_BISHOP, PROMOTION_KNIGHT};
+            for (int i = 0; i < 4; i++) {
+                uint32_t move = 0;
+                move |= from;
+                move |= (to << 6);
+                move |= (promo_pieces[i] << 12);
+                move_list->moves[move_list->count++] = move;
+            }
+        } else {
             uint32_t move = 0;
-            move |= from_square;               // From square
-            move |= (to_square << 6);         // To square
-
+            move |= from;
+            move |= (to << 6);
             move_list->moves[move_list->count++] = move;
         }
-        pawns &= pawns - 1; // Clear the least significant bit
     }
 }
+
+
+void generate_white_pawn_capture_moves(uint64_t pawns, struct MoveList* move_list, uint64_t opponent_pieces) {
+    while (pawns) {
+        int from = __builtin_ctzll(pawns);
+        pawns &= pawns - 1;
+
+        uint64_t captures = white_pawn_attacks[from] & opponent_pieces;
+
+        while (captures) {
+            int to = __builtin_ctzll(captures);
+            captures &= captures - 1;
+
+            // PROMOTION CAPTURE
+            if (to >= 56) {
+                int promo_pieces[4] = {PROMOTION_QUEEN, PROMOTION_ROOK, PROMOTION_BISHOP, PROMOTION_KNIGHT};
+                for (int i = 0; i < 4; i++) {
+                    uint32_t move = 0;
+                    move |= from;
+                    move |= (to << 6);
+                    move |= (1 << 17);  // capture
+                    move |= (promo_pieces[i] << 12);
+                    move_list->moves[move_list->count++] = move;
+                }
+            } else {
+                uint32_t move = 0;
+                move |= from;
+                move |= (to << 6);
+                move |= (1 << 17); // capture
+                move_list->moves[move_list->count++] = move;
+            }
+        }
+    }
+}
+
+
+void generate_black_pawn_capture_moves(uint64_t pawns, struct MoveList* move_list, uint64_t opponent_pieces) {
+    while (pawns) {
+        int from = __builtin_ctzll(pawns);
+        pawns &= pawns - 1;
+
+        uint64_t captures = white_pawn_attacks[from] & opponent_pieces;
+
+        while (captures) {
+            int to = __builtin_ctzll(captures);
+            captures &= captures - 1;
+
+            // PROMOTION CAPTURE
+            if (to >= 7) {
+                int promo_pieces[4] = {PROMOTION_QUEEN, PROMOTION_ROOK, PROMOTION_BISHOP, PROMOTION_KNIGHT};
+                for (int i = 0; i < 4; i++) {
+                    uint32_t move = 0;
+                    move |= from;
+                    move |= (to << 6);
+                    move |= (1 << 17);  // capture
+                    move |= (promo_pieces[i] << 12);
+                    move_list->moves[move_list->count++] = move;
+                }
+            } else {
+                uint32_t move = 0;
+                move |= from;
+                move |= (to << 6);
+                move |= (1 << 17); // capture
+                move_list->moves[move_list->count++] = move;
+            }
+        }
+    }
+}
+
 
 void generate_white_pawn_double_push_moves(uint64_t pawns, struct MoveList* move_list, uint64_t occupancy) {
     while (pawns) {
@@ -85,6 +177,7 @@ void generate_white_pawn_double_push_moves(uint64_t pawns, struct MoveList* move
     }
 }
 
+
 void generate_black_pawn_double_push_moves(uint64_t pawns, struct MoveList* move_list, uint64_t occupancy) {
     while (pawns) {
         int from_square = __builtin_ctzll(pawns);
@@ -106,49 +199,6 @@ void generate_black_pawn_double_push_moves(uint64_t pawns, struct MoveList* move
     }
 }
 
-void generate_white_pawn_capture_moves(uint64_t pawns, struct MoveList* move_list, uint64_t opponent_pieces) {
-    while (pawns) {
-        int from = __builtin_ctzll(pawns);
-        pawns &= pawns - 1; // Clear the least significant bit
-
-        uint64_t attacks = white_pawn_attacks[from];
-        uint64_t captures = attacks & opponent_pieces;
-
-        while (captures) {
-            int to = __builtin_ctzll(captures);
-            captures &= captures - 1;
-
-            uint32_t move = 0;
-            move |= from;           // from square
-            move |= (to << 6);      // to square
-            move |= (1 << 17);      // Capture flag
-
-            move_list->moves[move_list->count++] = move;
-        }
-    }
-}
-
-void generate_black_pawn_capture_moves(uint64_t pawns, struct MoveList* move_list, uint64_t opponent_pieces) {
-    while (pawns) {
-        int from = __builtin_ctzll(pawns);
-        pawns &= pawns - 1; // Clear the least significant bit
-
-        uint64_t attacks = black_pawn_attacks[from];
-        uint64_t captures = attacks & opponent_pieces;
-
-        while (captures) {
-            int to = __builtin_ctzll(captures);
-            captures &= captures - 1;
-
-            uint32_t move = 0;
-            move |= from;           // from square
-            move |= (to << 6);      // to square
-            move |= (1 << 17);      // Capture flag
-
-            move_list->moves[move_list->count++] = move;
-        }
-    }
-}
 
 void generate_white_pawn_moves(uint64_t pawns, struct MoveList* move_list, uint64_t occupancy, uint64_t opponent_pieces) {
     generate_white_pawn_push_moves(pawns, move_list, occupancy);

@@ -166,7 +166,7 @@ int main(void) {
     if (frame_time < FRAME_TIME_MS) {
       SDL_Delay(FRAME_TIME_MS - frame_time); // Cap FPS
     } 
-    fps_update_terminal(&fps_counter, FPS_UPDATE_INTERVAL);
+    //fps_update_terminal(&fps_counter, FPS_UPDATE_INTERVAL);
   }
 
   destroy_pieces_textures(&textures);

@@ -7,6 +7,11 @@
 
 #define MAX_MOVES 256
 
+#define PROMOTION_NONE 0
+#define PROMOTION_QUEEN 1
+#define PROMOTION_ROOK  2
+#define PROMOTION_BISHOP 3
+#define PROMOTION_KNIGHT 4
 
 // uint32_t move representation:
 // Bits 0-5:   From square (0-63)
