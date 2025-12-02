@@ -13,6 +13,12 @@
 #define PROMOTION_BISHOP 3
 #define PROMOTION_KNIGHT 4
 
+#define NO_CASTLING      0
+#define WHITE_KINGSIDE   1
+#define WHITE_QUEENSIDE  2
+#define BLACK_KINGSIDE   4
+#define BLACK_QUEENSIDE  8
+
 // uint32_t move representation:
 // Bits 0-5:   From square (0-63)
 // Bits 6-11:  To square (0-63)

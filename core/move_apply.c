@@ -4,7 +4,7 @@
 
 void apply_move(struct Board* board, uint32_t move) {
     int from_square = move & 0x3F;
-    int to_square = (move >> 6) & 0x3F;
+    int to_square   = (move >> 6) & 0x3F;
     bool is_capture = (move >> 17) & 0x1;
     bool is_double_push = (move >> 16) & 0x1;
 
@@ -13,14 +13,36 @@ void apply_move(struct Board* board, uint32_t move) {
 
     bool player_colour = board->player_turn;
 
-    if (player_colour == white_player) {
+    // Reset en passant unless set by double pawn push
+    board->en_passant_square = EP_NONE;
 
+    if (player_colour == white_player) {
         for (int piece_type = 0; piece_type < 12; piece_type += 2) {
             if (board->bitboards[piece_type] & from_mask) {
 
-                board->bitboards[piece_type] &= ~from_mask; 
-                board->bitboards[piece_type] |=  to_mask;
+                // Handle castling (king moves two squares)
+                if (piece_type == white_king) {
+                    if (from_square == 4 && to_square == 6) { // White kingside
+                        board->bitboards[white_rook] &= ~(1ULL << 7);
+                        board->bitboards[white_rook] |= 1ULL << 5;
+                    } else if (from_square == 4 && to_square == 2) { // White queenside
+                        board->bitboards[white_rook] &= ~(1ULL << 0);
+                        board->bitboards[white_rook] |= 1ULL << 3;
+                    }
+                    board->castling_rights &= ~(CASTLE_WK | CASTLE_WQ);
+                }
 
+                // Move the piece
+                board->bitboards[piece_type] &= ~from_mask;
+                board->bitboards[piece_type] |= to_mask;
+
+                // Handle pawn promotion
+                if (piece_type == white_pawn && to_square >= 56) {
+                    board->bitboards[white_pawn] &= ~to_mask;
+                    board->bitboards[white_queen] |= to_mask;
+                }
+
+                // Handle captures
                 if (is_capture) {
                     for (int opp = 1; opp < 12; opp += 2) {
                         if (board->bitboards[opp] & to_mask) {
@@ -28,31 +50,53 @@ void apply_move(struct Board* board, uint32_t move) {
                             break;
                         }
                     }
+
+                    // En passant capture
+                    if (piece_type == white_pawn && to_square == board->en_passant_square) {
+                        board->bitboards[black_pawn] &= ~(1ULL << (to_square - 8));
+                    }
                 }
 
-                // --- AUTO PROMOTION (WHITE) ---
-                if (piece_type == white_pawn && to_square >= 56) {
-                    board->bitboards[white_pawn] &= ~to_mask;
-                    board->bitboards[white_queen] |= to_mask;
-                }
-
+                // Double pawn push sets en passant
                 if (piece_type == white_pawn && is_double_push)
                     board->en_passant_square = to_square - 8;
-                else
-                    board->en_passant_square = EP_NONE;
+
+                // Update castling rights if rook moves
+                if (piece_type == white_rook) {
+                    if (from_square == 0) board->castling_rights &= ~CASTLE_WQ;
+                    if (from_square == 7) board->castling_rights &= ~CASTLE_WK;
+                }
 
                 break;
             }
         }
-
-    } else {
-
+    } else { // black
         for (int piece_type = 1; piece_type < 12; piece_type += 2) {
             if (board->bitboards[piece_type] & from_mask) {
 
-                board->bitboards[piece_type] &= ~from_mask;
-                board->bitboards[piece_type] |=  to_mask;
+                // Handle castling
+                if (piece_type == black_king) {
+                    if (from_square == 60 && to_square == 62) { // Black kingside
+                        board->bitboards[black_rook] &= ~(1ULL << 63);
+                        board->bitboards[black_rook] |= 1ULL << 61;
+                    } else if (from_square == 60 && to_square == 58) { // Black queenside
+                        board->bitboards[black_rook] &= ~(1ULL << 56);
+                        board->bitboards[black_rook] |= 1ULL << 59;
+                    }
+                    board->castling_rights &= ~(CASTLE_BK | CASTLE_BQ);
+                }
 
+                // Move the piece
+                board->bitboards[piece_type] &= ~from_mask;
+                board->bitboards[piece_type] |= to_mask;
+
+                // Handle pawn promotion
+                if (piece_type == black_pawn && to_square <= 7) {
+                    board->bitboards[black_pawn] &= ~to_mask;
+                    board->bitboards[black_queen] |= to_mask;
+                }
+
+                // Handle captures
                 if (is_capture) {
                     for (int opp = 0; opp < 12; opp += 2) {
                         if (board->bitboards[opp] & to_mask) {
@@ -60,23 +104,41 @@ void apply_move(struct Board* board, uint32_t move) {
                             break;
                         }
                     }
+
+                    // En passant capture
+                    if (piece_type == black_pawn && to_square == board->en_passant_square) {
+                        board->bitboards[white_pawn] &= ~(1ULL << (to_square + 8));
+                    }
                 }
 
-                // --- AUTO PROMOTION (BLACK) ---
-                if (piece_type == black_pawn && to_square <= 7) {
-                    board->bitboards[black_pawn] &= ~to_mask;
-                    board->bitboards[black_queen] |= to_mask;
-                }
-
+                // Double pawn push sets en passant
                 if (piece_type == black_pawn && is_double_push)
                     board->en_passant_square = to_square + 8;
-                else
-                    board->en_passant_square = EP_NONE;
+
+                // Update castling rights if rook moves
+                if (piece_type == black_rook) {
+                    if (from_square == 56) board->castling_rights &= ~CASTLE_BQ;
+                    if (from_square == 63) board->castling_rights &= ~CASTLE_BK;
+                }
 
                 break;
             }
         }
     }
+
+    // Update occupancy bitboards
+    board->white_occupied = 0;
+    board->black_occupied = 0;
+    for (int i = 0; i < 12; i++) {
+        if (i % 2 == 0) board->white_occupied |= board->bitboards[i];
+        else            board->black_occupied |= board->bitboards[i];
+    }
+    board->all_occupied = board->white_occupied | board->black_occupied;
+
+    // Toggle turn
     board->player_turn = !board->player_turn;
+
+    // TODO: Update half-move counter and full-move counter
 }
+
 
