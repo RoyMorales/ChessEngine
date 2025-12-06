@@ -12,18 +12,14 @@ void apply_move(struct Board* board, uint32_t move) {
     bool is_capture = (move >> CAPTURE) & 0x1;
     bool is_double_push = (move >> DOUBLE_PUSH) & 0x1;
     bool is_pawn_move = (move >> PAWN_MOVE) & 0x1;
-    bool is_castling = (move >> MOVE_CASTLING) & 0x1;
-    bool is_promotion = ((move >> 12) & 0x0F) != 0;  // NOT SURE!!!!!!
-    bool is_en_passant = (move >> EN_PASSANT) & 0x1;
+    //bool is_castling = (move >> MOVE_CASTLING) & 0x1;
+    //bool is_promotion = ((move >> 12) & 0x0F) != 0;  // NOT SURE!!!!!!
+    //bool is_en_passant = (move >> EN_PASSANT) & 0x1;
 
     uint64_t from_mask = 1ULL << from_square;
     uint64_t to_mask   = 1ULL << to_square;
 
     bool player_colour = board->player_turn;
-
-    // Reset en passant unless set by double pawn push
-    // ToDo!!
-    board->en_passant_square = EP_NONE;
 
     if (player_colour == white_player) {
         for (int piece_type = 0; piece_type < 12; piece_type += 2) {
@@ -45,10 +41,16 @@ void apply_move(struct Board* board, uint32_t move) {
                 board->bitboards[piece_type] &= ~from_mask;
                 board->bitboards[piece_type] |= to_mask;
 
-                // Handle pawn promotion
-                if (piece_type == white_pawn && to_square >= 56) {
+                if (piece_type == white_pawn) {
+                    // Handle pawn promotion
+                    if (to_square >= 56) {
                     board->bitboards[white_pawn] &= ~to_mask;
                     board->bitboards[white_queen] |= to_mask;
+                    }
+                    
+                    if (is_double_push) {
+                        board->en_passant_square = to_square - 8;
+                    }   
                 }
 
                 // Handle captures
@@ -135,6 +137,11 @@ void apply_move(struct Board* board, uint32_t move) {
         }
     }
 
+    // Reset en passant unless set by double pawn push
+    if (!is_double_push) {
+        board->en_passant_square = EP_NONE;
+    }
+
     // Update occupancy bitboards
     board->white_occupied = 0;
     board->black_occupied = 0;
@@ -158,6 +165,8 @@ void apply_move(struct Board* board, uint32_t move) {
 
     // Toggle turn
     board->player_turn = !board->player_turn;
+
+    square_index_to_square_board(board->en_passant_square);
 }
 
 

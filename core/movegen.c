@@ -24,7 +24,6 @@ void generate_king_moves(uint64_t kings, struct MoveList* move_list, uint64_t ow
 
             attacks &= attacks - 1; // Clear the least significant bit
         }
-
         kings &= kings - 1; // Clear the least significant bit
     }
 }
@@ -102,7 +101,6 @@ void generate_castling_moves(struct Board* board, struct MoveList* list) {
 }
 
 
-
 void generate_white_pawn_push_moves(uint64_t pawns, struct MoveList* move_list, uint64_t occupancy) {
     while (pawns) {
         int from = __builtin_ctzll(pawns);
@@ -130,7 +128,6 @@ void generate_white_pawn_push_moves(uint64_t pawns, struct MoveList* move_list, 
 
             move_list->moves[move_list->count++] = move;
         }
-        
     }
 }
 
@@ -162,8 +159,6 @@ void generate_black_pawn_push_moves(uint64_t pawns, struct MoveList* move_list, 
 
             move_list->moves[move_list->count++] = move;
         }
-
-
     }
 }
 
@@ -289,18 +284,87 @@ void generate_black_pawn_double_push_moves(uint64_t pawns, struct MoveList* move
     }
 }
 
+void generate_white_pawn_en_passant_moves(uint64_t pawns, struct MoveList* move_list,
+                                          uint64_t opponent_pawns, int en_passant_square) {
+    if (en_passant_square == EP_NONE) return;
 
-void generate_white_pawn_moves(uint64_t pawns, struct MoveList* move_list, uint64_t occupancy, uint64_t opponent_pieces) {
+    int ep = en_passant_square;
+
+    int left_from  = ep - 9;  // white pawn at ep-9 captures ep
+    int right_from = ep - 7;  // white pawn at ep-7 captures ep
+
+    // LEFT pawn
+    if (left_from >= 0 && (pawns & (1ULL << left_from))) {
+        uint32_t move = 0;
+        move |= left_from;
+        move |= (ep << 6);
+        move |= (1 << EN_PASSANT);
+        move |= (1 << CAPTURE);
+        move |= (1 << PAWN_MOVE);
+        move_list->moves[move_list->count++] = move;
+    }
+
+    // RIGHT pawn
+    if (right_from >= 0 && (pawns & (1ULL << right_from))) {
+        uint32_t move = 0;
+        move |= right_from;
+        move |= (ep << 6);
+        move |= (1 << EN_PASSANT);
+        move |= (1 << CAPTURE);
+        move |= (1 << PAWN_MOVE);
+        move_list->moves[move_list->count++] = move;
+    }
+}
+
+
+void generate_black_pawn_en_passant_moves(uint64_t pawns, struct MoveList* move_list,
+                                          uint64_t opponent_pawns, int en_passant_square) {
+    if (en_passant_square == EP_NONE) return;
+
+    int ep = en_passant_square;
+
+    int left_from  = ep + 7;
+    int right_from = ep + 9;
+
+    // LEFT pawn
+    if (left_from < 64 && (pawns & (1ULL << left_from))) {
+        uint32_t move = 0;
+        move |= left_from;
+        move |= (ep << 6);
+        move |= (1 << EN_PASSANT);
+        move |= (1 << CAPTURE);
+        move |= (1 << PAWN_MOVE);
+        move_list->moves[move_list->count++] = move;
+    }
+
+    // RIGHT pawn
+    if (right_from < 64 && (pawns & (1ULL << right_from))) {
+        uint32_t move = 0;
+        move |= right_from;
+        move |= (ep << 6);
+        move |= (1 << EN_PASSANT);
+        move |= (1 << CAPTURE);
+        move |= (1 << PAWN_MOVE);
+        move_list->moves[move_list->count++] = move;
+    }
+}
+
+
+void generate_white_pawn_moves(uint64_t pawns, struct MoveList* move_list, uint64_t occupancy, uint64_t opponent_pieces, unsigned char en_passant_square) {
     generate_white_pawn_push_moves(pawns, move_list, occupancy);
     generate_white_pawn_double_push_moves(pawns, move_list, occupancy);
     generate_white_pawn_capture_moves(pawns, move_list, opponent_pieces);
+    generate_white_pawn_en_passant_moves(pawns, move_list, opponent_pieces, en_passant_square);
 }
 
-void generate_black_pawn_moves(uint64_t pawns, struct MoveList* move_list, uint64_t occupancy, uint64_t opponent_pieces) {
+
+void generate_black_pawn_moves(uint64_t pawns, struct MoveList* move_list, uint64_t occupancy, uint64_t opponent_pieces, unsigned char en_passant_square) {
     generate_black_pawn_push_moves(pawns, move_list, occupancy);
     generate_black_pawn_double_push_moves(pawns, move_list, occupancy);
     generate_black_pawn_capture_moves(pawns, move_list, opponent_pieces);
+    generate_black_pawn_en_passant_moves(pawns, move_list, opponent_pieces, en_passant_square);
 }
+
 
 void generate_knight_moves(uint64_t knights, struct MoveList* move_list, uint64_t own_pieces, uint64_t opponent_pieces) {
     while (knights) {
@@ -322,7 +386,6 @@ void generate_knight_moves(uint64_t knights, struct MoveList* move_list, uint64_
 
             attacks &= attacks - 1; // Clear the least significant bit
         }
-
         knights &= knights - 1; // Clear the least significant bit
     }
 }
@@ -348,7 +411,6 @@ void generate_bishop_moves(uint64_t bishops, struct MoveList* move_list, uint64_
 
             attacks &= attacks - 1; // Clear the least significant bit
         }
-
         bishops &= bishops - 1; // Clear the least significant bit
     }
 }
@@ -374,7 +436,6 @@ void generate_rook_moves(uint64_t rooks, struct MoveList* move_list, uint64_t ow
 
             attacks &= attacks - 1; // Clear the least significant bit
         }
-
         rooks &= rooks - 1; // Clear the least significant bit
     }
 }
@@ -402,7 +463,6 @@ void generate_queen_moves(uint64_t queens, struct MoveList* move_list, uint64_t 
 
             attacks &= attacks - 1; // Clear the least significant bit
         }
-
         queens &= queens - 1; // Clear the least significant bit
     }
 }
@@ -416,7 +476,7 @@ struct MoveList genrate_board_moves(struct Board* board) {
         generate_king_moves(board->bitboards[white_king], &move_list, board->white_occupied, board->black_occupied);
         generate_castling_moves(board, &move_list);
 
-        generate_white_pawn_moves(board->bitboards[white_pawn], &move_list, board->all_occupied, board->black_occupied);
+        generate_white_pawn_moves(board->bitboards[white_pawn], &move_list, board->all_occupied, board->black_occupied, board->en_passant_square);
         generate_knight_moves(board->bitboards[white_knight], &move_list, board->white_occupied, board->black_occupied);
         generate_bishop_moves(board->bitboards[white_bishop], &move_list, board->white_occupied, board->black_occupied, board->all_occupied);
         generate_rook_moves(board->bitboards[white_rook], &move_list, board->white_occupied, board->black_occupied, board->all_occupied);
@@ -425,7 +485,7 @@ struct MoveList genrate_board_moves(struct Board* board) {
         generate_king_moves(board->bitboards[black_king], &move_list, board->black_occupied, board->white_occupied);
         generate_castling_moves(board, &move_list);
 
-        generate_black_pawn_moves(board->bitboards[black_pawn], &move_list, board->all_occupied, board->white_occupied);
+        generate_black_pawn_moves(board->bitboards[black_pawn], &move_list, board->all_occupied, board->white_occupied, board->en_passant_square);
         generate_knight_moves(board->bitboards[black_knight], &move_list, board->black_occupied, board->white_occupied);
         generate_bishop_moves(board->bitboards[black_bishop], &move_list, board->black_occupied, board->white_occupied, board->all_occupied);
         generate_rook_moves(board->bitboards[black_rook], &move_list, board->black_occupied, board->white_occupied, board->all_occupied);

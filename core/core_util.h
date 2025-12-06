@@ -24,6 +24,7 @@ char* join_board_string(struct Board board);
 void print_board_string(char* string_board);
 void print_move_list(struct MoveList* move_list);
 void print_move(uint32_t move);
+void square_index_to_square_board(unsigned char square_index);
 
 #endif
 

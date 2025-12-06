@@ -84,6 +84,14 @@ void print_board_string(char* string_board) {
   } 
 }
 
+static const char* flag_names[5] = {
+  "DOUBLE_PUSH",
+  "CAPTURE",
+  "EN_PASSANT",
+  "MOVE_CASTLING",
+  "PAWN_MOVE"
+};
+
 void print_move_list(struct MoveList* move_list) {
   printf("-----------------------------\n");
   printf("Move List (Total Moves: %d):\n", move_list->count);
@@ -92,7 +100,7 @@ void print_move_list(struct MoveList* move_list) {
     int from_square = move & 0x3F;               // Bits 0-5
     int to_square = (move >> 6) & 0x3F;          // Bits 6-11
     int promotion_piece = (move >> 12) & 0x0F;   // Bits 12-15
-    int move_flags = (move >> 16) & 0x0F;        // Bits 16-20
+    int move_flags = (move >> 16) & 0x1F;        // Bits 16-20
 
     printf("Move %d: From %d To %d", i + 1, from_square, to_square);
 
@@ -102,15 +110,8 @@ void print_move_list(struct MoveList* move_list) {
     if (move_flags) {
       for (int i = 0; i < 5; i++) {
         if (move_flags & (1 << i)) {
-          switch (i) {
-            case 0: printf(" | [DOUBLE_PUSH]"); continue;
-            case 1: printf(" | [CAPTURE]"); continue;
-            case 2: printf(" | [EN_PASSANT]"); continue;
-            case 3: printf(" | [MOVE_CASTLING]"); continue;
-            case 4: printf(" | [PAWN_MOVE]"); continue;
-            default: break;
-          }
-        }
+          printf(" | [%s]", flag_names[i]);
+        } 
       }
     }
     printf("\n");
@@ -118,12 +119,11 @@ void print_move_list(struct MoveList* move_list) {
   printf("-----------------------------\n");
 }
 
-
 void print_move(uint32_t move) {
     int from_square = move & 0x3F;               // Bits 0-5
     int to_square = (move >> 6) & 0x3F;          // Bits 6-11
     int promotion_piece = (move >> 12) & 0x0F;   // Bits 12-15
-    int move_flags = (move >> 16) & 0x0F;        // Bits 16-20
+    int move_flags = (move >> 16) & 0x1F;        // Bits 16-20
 
     printf("Move: From %d To %d", from_square, to_square);
 
@@ -134,17 +134,19 @@ void print_move(uint32_t move) {
     if (move_flags) {
       for (int i = 0; i < 5; i++) {
         if (move_flags & (1 << i)) {
-          switch (i) {
-            case 0: printf(" | [DOUBLE_PUSH]"); continue;
-            case 1: printf(" | [CAPTURE]"); continue;
-            case 2: printf(" | [EN_PASSANT]"); continue;
-            case 3: printf(" | [MOVE_CASTLING]"); continue;
-            case 4: printf(" | [PAWN_MOVE]"); continue;
-            default: break;
-          }
-        }
+          printf(" | [%s]", flag_names[i]);
+        } 
       }
     }
+  printf("\n");
+}
 
-    printf("\n");
+void square_index_to_square_board(unsigned char square_index) {
+  int file = square_index % 8;      // 0–7
+  int rank = square_index / 8;      // 0–7
+  
+  char file_char = 'a' + file;
+  char rank_char = '1' + rank;
+
+  printf("Square Board: %c%c\n", file_char, rank_char);
 }
