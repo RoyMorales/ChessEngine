@@ -1,11 +1,7 @@
 // Generate move attack for pieces
 
-#include "board.h"
-#include "attack.h"
 #include "movegen.h"
-#include "core_util.h"
 
-#define MOVE_CASTLING (1u << 18)
 
 void generate_king_moves(uint64_t kings, struct MoveList* move_list, uint64_t own_pieces, uint64_t opponent_pieces) {
     while (kings) {
@@ -17,10 +13,10 @@ void generate_king_moves(uint64_t kings, struct MoveList* move_list, uint64_t ow
 
             uint32_t move = 0;
             move |= from_square;               // From square
-            move |= (to_square << 6);         // To square
+            move |= (to_square << 6);          // To square
 
             if (opponent_pieces & (1ULL << to_square)) {
-                move |= (1 << 17); // Capture flag
+                move |= (1 << CAPTURE);        // Capture flag
             }
 
             move_list->moves[move_list->count++] = move;
@@ -33,7 +29,7 @@ void generate_king_moves(uint64_t kings, struct MoveList* move_list, uint64_t ow
 }
 
 
-static inline void generate_castling_moves(struct Board* board, struct MoveList* list) {
+void generate_castling_moves(struct Board* board, struct MoveList* list) {
     uint64_t occ = board->all_occupied;
 
     if (board->player_turn == white_player) {
@@ -103,17 +99,21 @@ void generate_white_pawn_push_moves(uint64_t pawns, struct MoveList* move_list, 
             int promo_pieces[4] = {PROMOTION_QUEEN, PROMOTION_ROOK, PROMOTION_BISHOP, PROMOTION_KNIGHT};
             for (int i = 0; i < 4; i++) {
                 uint32_t move = 0;
-                move |= from;
-                move |= (to << 6);
-                move |= (promo_pieces[i] << 12);
+                move |= from;                    // From Square
+                move |= (to << 6);               // To Square
+                move |= (promo_pieces[i] << 12); // Promotion Flag
+
                 move_list->moves[move_list->count++] = move;
             }
         } else {
             uint32_t move = 0;
-            move |= from;
-            move |= (to << 6);
+            move |= from;                // From Square
+            move |= (to << 6);           // To Square
+            move |= (1 << PAWN_MOVE);    // Pawn Move Flag
+
             move_list->moves[move_list->count++] = move;
         }
+        
     }
 }
 
@@ -131,17 +131,22 @@ void generate_black_pawn_push_moves(uint64_t pawns, struct MoveList* move_list, 
             int promo_pieces[4] = {PROMOTION_QUEEN, PROMOTION_ROOK, PROMOTION_BISHOP, PROMOTION_KNIGHT};
             for (int i = 0; i < 4; i++) {
                 uint32_t move = 0;
-                move |= from;
-                move |= (to << 6);
-                move |= (promo_pieces[i] << 12);
+                move |= from;                      // From Square
+                move |= (to << 6);                 // To Square
+                move |= (promo_pieces[i] << 12);   // Promotion Flag
+
                 move_list->moves[move_list->count++] = move;
             }
         } else {
             uint32_t move = 0;
-            move |= from;
-            move |= (to << 6);
+            move |= from;                           // From Square
+            move |= (to << 6);                      // To Square
+            move |= (1 << PAWN_MOVE);               // Pawn move flag
+
             move_list->moves[move_list->count++] = move;
         }
+
+
     }
 }
 
@@ -162,17 +167,21 @@ void generate_white_pawn_capture_moves(uint64_t pawns, struct MoveList* move_lis
                 int promo_pieces[4] = {PROMOTION_QUEEN, PROMOTION_ROOK, PROMOTION_BISHOP, PROMOTION_KNIGHT};
                 for (int i = 0; i < 4; i++) {
                     uint32_t move = 0;
-                    move |= from;
-                    move |= (to << 6);
-                    move |= (1 << 17);  // capture
-                    move |= (promo_pieces[i] << 12);
+                    move |= from;                     // From Square
+                    move |= (to << 6);                // To Square
+                    move |= (1 << CAPTURE);           // Capture Flag
+                    move |= (1 << PAWN_MOVE);         // Pawn Move Flag
+                    move |= (promo_pieces[i] << 12);  // Promotion Flag
+
                     move_list->moves[move_list->count++] = move;
                 }
             } else {
                 uint32_t move = 0;
-                move |= from;
-                move |= (to << 6);
-                move |= (1 << 17); // capture
+                move |= from;                         // From Square
+                move |= (to << 6);                    // To Square
+                move |= (1 << CAPTURE);               // Capture Flag
+                move |= (1 << PAWN_MOVE);             // Pawn Move Flag
+
                 move_list->moves[move_list->count++] = move;
             }
         }
@@ -196,17 +205,21 @@ void generate_black_pawn_capture_moves(uint64_t pawns, struct MoveList* move_lis
                 int promo_pieces[4] = {PROMOTION_QUEEN, PROMOTION_ROOK, PROMOTION_BISHOP, PROMOTION_KNIGHT};
                 for (int i = 0; i < 4; i++) {
                     uint32_t move = 0;
-                    move |= from;
-                    move |= (to << 6);
-                    move |= (1 << 17);  // capture
-                    move |= (promo_pieces[i] << 12);
+                    move |= from;                     // From Square
+                    move |= (to << 6);                // To Square
+                    move |= (1 << CAPTURE);           // Capture Flag
+                    move |= (1 << PAWN_MOVE);         // Pawn Move Flag
+                    move |= (promo_pieces[i] << 12);  // Promotion Flag
+
                     move_list->moves[move_list->count++] = move;
                 }
             } else {
                 uint32_t move = 0;
-                move |= from;
-                move |= (to << 6);
-                move |= (1 << 17); // capture
+                move |= from;                         // From Square                 
+                move |= (to << 6);                    // To Square
+                move |= (1 << CAPTURE);               // Capture Flag
+                move |= (1 << PAWN_MOVE);             // Pawn Move Flag
+
                 move_list->moves[move_list->count++] = move;
             }
         }
@@ -225,9 +238,10 @@ void generate_white_pawn_double_push_moves(uint64_t pawns, struct MoveList* move
             !(occupancy & (1ULL << to_square))) {
             
             uint32_t move = 0;
-            move |= from_square;               // From square
+            move |= from_square;              // From square
             move |= (to_square << 6);         // To square
-            move |= (1 << 16);                 // Double push flag
+            move |= (1 << DOUBLE_PUSH);       // Double push flag
+            move |= (1 << PAWN_MOVE);         // Pawn move flag
 
             move_list->moves[move_list->count++] = move;
         }
@@ -247,9 +261,10 @@ void generate_black_pawn_double_push_moves(uint64_t pawns, struct MoveList* move
             !(occupancy & (1ULL << to_square))) {
             
             uint32_t move = 0;
-            move |= from_square;               // From square
+            move |= from_square;              // From square
             move |= (to_square << 6);         // To square
-            move |= (1 << 16);                 // Double push flag
+            move |= (1 << DOUBLE_PUSH);       // Double push flag
+            move |= (1 << PAWN_MOVE);         // Pawn move flag
 
             move_list->moves[move_list->count++] = move;
         }
@@ -279,11 +294,11 @@ void generate_knight_moves(uint64_t knights, struct MoveList* move_list, uint64_
             int to_square = __builtin_ctzll(attacks);
 
             uint32_t move = 0;
-            move |= from_square;               // From square
-            move |= (to_square << 6);         // To square
+            move |= from_square;             // From square
+            move |= (to_square << 6);        // To square
 
             if (opponent_pieces & (1ULL << to_square)) {
-                move |= (1 << 17); // Capture flag
+                move |= (1 << CAPTURE);      // Capture flag
             }
 
             move_list->moves[move_list->count++] = move;
@@ -305,11 +320,11 @@ void generate_bishop_moves(uint64_t bishops, struct MoveList* move_list, uint64_
             int to_square = __builtin_ctzll(attacks);
 
             uint32_t move = 0;
-            move |= from_square;               // From square
+            move |= from_square;              // From square
             move |= (to_square << 6);         // To square
 
             if (opponent_pieces & (1ULL << to_square)) {
-                move |= (1 << 17); // Capture flag
+                move |= (1 << CAPTURE);       // Capture flag
             }
 
             move_list->moves[move_list->count++] = move;
@@ -331,11 +346,11 @@ void generate_rook_moves(uint64_t rooks, struct MoveList* move_list, uint64_t ow
             int to_square = __builtin_ctzll(attacks);
 
             uint32_t move = 0;
-            move |= from_square;               // From square
+            move |= from_square;              // From square
             move |= (to_square << 6);         // To square
 
             if (opponent_pieces & (1ULL << to_square)) {
-                move |= (1 << 17); // Capture flag
+                move |= (1 << CAPTURE);       // Capture flag
             }
 
             move_list->moves[move_list->count++] = move;
@@ -359,11 +374,11 @@ void generate_queen_moves(uint64_t queens, struct MoveList* move_list, uint64_t 
             int to_square = __builtin_ctzll(attacks);
 
             uint32_t move = 0;
-            move |= from_square;               // From square
+            move |= from_square;              // From square
             move |= (to_square << 6);         // To square
 
             if (opponent_pieces & (1ULL << to_square)) {
-                move |= (1 << 17); // Capture flag
+                move |= (1 << CAPTURE);      // Capture flag
             }
 
             move_list->moves[move_list->count++] = move;
@@ -380,24 +395,21 @@ struct MoveList genrate_board_moves(struct Board* board) {
     struct MoveList move_list;
     move_list.count = 0;
 
-    uint64_t own_pieces = (board->player_turn == white_player) ? board->white_occupied : board->black_occupied;
-    uint64_t opponent_pieces = (board->player_turn == white_player) ? board->black_occupied : board->white_occupied;
-
     if (board->player_turn == white_player) {
-        generate_king_moves(board->bitboards[white_king], &move_list, own_pieces, opponent_pieces);
+        generate_king_moves(board->bitboards[white_king], &move_list, board->white_occupied, board->black_occupied);
         generate_castling_moves(board, &move_list);
 
-        generate_white_pawn_moves(board->bitboards[white_pawn], &move_list, board->all_occupied, opponent_pieces);
-        generate_knight_moves(board->bitboards[white_knight], &move_list, own_pieces, opponent_pieces);
+        generate_white_pawn_moves(board->bitboards[white_pawn], &move_list, board->all_occupied, board->black_occupied);
+        generate_knight_moves(board->bitboards[white_knight], &move_list, board->white_occupied, board->black_occupied);
         generate_bishop_moves(board->bitboards[white_bishop], &move_list, board->white_occupied, board->black_occupied, board->all_occupied);
         generate_rook_moves(board->bitboards[white_rook], &move_list, board->white_occupied, board->black_occupied, board->all_occupied);
         generate_queen_moves(board->bitboards[white_queen], &move_list, board->white_occupied, board->black_occupied, board->all_occupied);
     } else {
-        generate_king_moves(board->bitboards[black_king], &move_list, own_pieces, opponent_pieces);
+        generate_king_moves(board->bitboards[black_king], &move_list, board->black_occupied, board->white_occupied);
         generate_castling_moves(board, &move_list);
 
-        generate_black_pawn_moves(board->bitboards[black_pawn], &move_list, board->all_occupied, opponent_pieces);
-        generate_knight_moves(board->bitboards[black_knight], &move_list, own_pieces, opponent_pieces);
+        generate_black_pawn_moves(board->bitboards[black_pawn], &move_list, board->all_occupied, board->white_occupied);
+        generate_knight_moves(board->bitboards[black_knight], &move_list, board->black_occupied, board->white_occupied);
         generate_bishop_moves(board->bitboards[black_bishop], &move_list, board->black_occupied, board->white_occupied, board->all_occupied);
         generate_rook_moves(board->bitboards[black_rook], &move_list, board->black_occupied, board->white_occupied, board->all_occupied);
         generate_queen_moves(board->bitboards[black_queen], &move_list, board->black_occupied, board->white_occupied, board->all_occupied);

@@ -33,6 +33,7 @@ void print_bitboard(struct Board board) {
   }
 }
 
+
 // Function to convert Board struct to a string representation
 char* join_board_string(struct Board board) {
   static char board_string[65];
@@ -104,4 +105,34 @@ void print_move_list(struct MoveList* move_list) {
     printf("\n");
   }
   printf("-----------------------------\n");
+}
+
+
+void print_move(uint32_t move) {
+    int from_square = move & 0x3F;               // Bits 0-5
+    int to_square = (move >> 6) & 0x3F;          // Bits 6-11
+    int promotion_piece = (move >> 12) & 0x0F;   // Bits 12-15
+    int move_flags = (move >> 16) & 0x0F;        // Bits 16-20
+
+    printf("Move: From %d To %d", from_square, to_square);
+
+    if (promotion_piece) {
+      printf("| Promotion Piece: %d", promotion_piece);
+    }
+
+    if (move_flags) {
+      for (int i = 0; i < 5; i++) {
+        if (move_flags & (1 << i)) {
+          switch (i) {
+            case 0: printf("| [DOUBLE_PUSH]"); break;
+            case 1: printf("| [CAPTURE]"); break;
+            case 2: printf("| [EN_PASSANT]"); break;
+            case 3: printf("| [MOVE_CASTLING]"); break;
+            case 4: printf("| [PAWN_MOVE]"); break;
+          }
+        }
+      }
+    }
+
+    printf("\n");
 }

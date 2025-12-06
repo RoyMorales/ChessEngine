@@ -7,6 +7,13 @@
 #include "movegen.h"
 
 
+#define DOUBLE_PUSH 16
+#define CAPTURE 17
+#define EN_PASSANT 18
+#define MOVE_CASTLING 19
+#define PAWN_MOVE 20
+
+
 void apply_move(struct Board* board, uint32_t move);
 
 #endif 

@@ -10,6 +10,13 @@
 #include "movegen.h"
 
 
+#define DOUBLE_PUSH 16
+#define CAPTURE 17
+#define EN_PASSANT 18
+#define MOVE_CASTLING 19
+#define PAWN_MOVE 20
+
+
 void clear_screen();
 void print_bits(uint64_t bitboard);
 void print_bitboard(struct Board board);

@@ -5,8 +5,13 @@
 void apply_move(struct Board* board, uint32_t move) {
     int from_square = move & 0x3F;
     int to_square   = (move >> 6) & 0x3F;
-    bool is_capture = (move >> 17) & 0x1;
-    bool is_double_push = (move >> 16) & 0x1;
+
+    bool is_capture = (move >> CAPTURE) & 0x1;
+    bool is_double_push = (move >> DOUBLE_PUSH) & 0x1;
+    bool is_pawn_move = (move >> PAWN_MOVE) & 0x1;
+    bool is_castling = (move >> MOVE_CASTLING) & 0x1;
+    bool is_promotion = ((move >> 12) & 0x0F) != 0;
+    bool is_en_passant = (move >> EN_PASSANT) & 0x1;
 
     uint64_t from_mask = 1ULL << from_square;
     uint64_t to_mask   = 1ULL << to_square;
@@ -135,10 +140,20 @@ void apply_move(struct Board* board, uint32_t move) {
     }
     board->all_occupied = board->white_occupied | board->black_occupied;
 
+    // Update half-move counter
+    if (is_capture || is_pawn_move) {
+        board->half_turn = 0;
+    } else {
+        board->half_turn += 1;
+    }
+
+    // Update full-move counter
+    if (player_colour == black_player) {
+        board->counter_turn += 1;
+    }
+
     // Toggle turn
     board->player_turn = !board->player_turn;
-
-    // TODO: Update half-move counter and full-move counter
 }
 
 
