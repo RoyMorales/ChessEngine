@@ -1,6 +1,7 @@
 // Generate move attack for pieces
 
 #include "movegen.h"
+#include <stdio.h>
 
 
 void generate_king_moves(uint64_t kings, struct MoveList* move_list, uint64_t own_pieces, uint64_t opponent_pieces) {
@@ -41,7 +42,11 @@ void generate_castling_moves(struct Board* board, struct MoveList* list) {
             bool empty_f1 = !(occ & (1ULL << 5));
             bool empty_g1 = !(occ & (1ULL << 6));
             if (empty_f1 && empty_g1) {
-                uint32_t move = (4) | (6 << 6) | MOVE_CASTLING;
+                uint32_t move = 0;
+                move |= 4;
+                move |= (6 << 6);
+                move |= (1 << MOVE_CASTLING);
+                
                 list->moves[list->count++] = move;
             }
         }
@@ -52,7 +57,11 @@ void generate_castling_moves(struct Board* board, struct MoveList* list) {
             bool empty_c1 = !(occ & (1ULL << 2));
             bool empty_b1 = !(occ & (1ULL << 1));
             if (empty_d1 && empty_c1 && empty_b1) {
-                uint32_t move = (4) | (2 << 6) | MOVE_CASTLING;
+                uint32_t move = 0;
+                move |= 4;
+                move |= (2 << 6);                
+                move |= (1 << MOVE_CASTLING);
+                
                 list->moves[list->count++] = move;
             }
         }
@@ -66,7 +75,11 @@ void generate_castling_moves(struct Board* board, struct MoveList* list) {
             bool empty_f8 = !(occ & (1ULL << 61));
             bool empty_g8 = !(occ & (1ULL << 62));
             if (empty_f8 && empty_g8) {
-                uint32_t move = (60) | (62 << 6) | MOVE_CASTLING;
+                uint32_t move = 0;
+                move |= 60;
+                move |= (62 << 6);
+                move |= (1 << MOVE_CASTLING);
+
                 list->moves[list->count++] = move;
             }
         }
@@ -77,7 +90,11 @@ void generate_castling_moves(struct Board* board, struct MoveList* list) {
             bool empty_c8 = !(occ & (1ULL << 58));
             bool empty_b8 = !(occ & (1ULL << 57));
             if (empty_d8 && empty_c8 && empty_b8) {
-                uint32_t move = (60) | (58 << 6) | MOVE_CASTLING;
+                uint32_t move = 0;
+                move |= 60;
+                move |= (58 << 6);
+                move |= (1 << MOVE_CASTLING);
+
                 list->moves[list->count++] = move;
             }
         }
@@ -194,7 +211,7 @@ void generate_black_pawn_capture_moves(uint64_t pawns, struct MoveList* move_lis
         int from = __builtin_ctzll(pawns);
         pawns &= pawns - 1;
 
-        uint64_t captures = white_pawn_attacks[from] & opponent_pieces;
+        uint64_t captures = black_pawn_attacks[from] & opponent_pieces;
 
         while (captures) {
             int to = __builtin_ctzll(captures);

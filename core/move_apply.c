@@ -3,6 +3,9 @@
 #include "move_apply.h"
 
 void apply_move(struct Board* board, uint32_t move) {
+
+    print_move(move);
+
     int from_square = move & 0x3F;
     int to_square   = (move >> 6) & 0x3F;
 
@@ -10,7 +13,7 @@ void apply_move(struct Board* board, uint32_t move) {
     bool is_double_push = (move >> DOUBLE_PUSH) & 0x1;
     bool is_pawn_move = (move >> PAWN_MOVE) & 0x1;
     bool is_castling = (move >> MOVE_CASTLING) & 0x1;
-    bool is_promotion = ((move >> 12) & 0x0F) != 0;
+    bool is_promotion = ((move >> 12) & 0x0F) != 0;  // NOT SURE!!!!!!
     bool is_en_passant = (move >> EN_PASSANT) & 0x1;
 
     uint64_t from_mask = 1ULL << from_square;
@@ -19,6 +22,7 @@ void apply_move(struct Board* board, uint32_t move) {
     bool player_colour = board->player_turn;
 
     // Reset en passant unless set by double pawn push
+    // ToDo!!
     board->en_passant_square = EP_NONE;
 
     if (player_colour == white_player) {

@@ -92,7 +92,7 @@ void print_move_list(struct MoveList* move_list) {
     int from_square = move & 0x3F;               // Bits 0-5
     int to_square = (move >> 6) & 0x3F;          // Bits 6-11
     int promotion_piece = (move >> 12) & 0x0F;   // Bits 12-15
-    int move_flags = (move >> 16) & 0x0F;        // Bits 16-19
+    int move_flags = (move >> 16) & 0x0F;        // Bits 16-20
 
     printf("Move %d: From %d To %d", i + 1, from_square, to_square);
 
@@ -100,8 +100,19 @@ void print_move_list(struct MoveList* move_list) {
       printf(" Promotion Piece: %d", promotion_piece);
     }
     if (move_flags) {
-      printf(" Move Flags: %d", move_flags);
-    }  
+      for (int i = 0; i < 5; i++) {
+        if (move_flags & (1 << i)) {
+          switch (i) {
+            case 0: printf(" | [DOUBLE_PUSH]"); continue;
+            case 1: printf(" | [CAPTURE]"); continue;
+            case 2: printf(" | [EN_PASSANT]"); continue;
+            case 3: printf(" | [MOVE_CASTLING]"); continue;
+            case 4: printf(" | [PAWN_MOVE]"); continue;
+            default: break;
+          }
+        }
+      }
+    }
     printf("\n");
   }
   printf("-----------------------------\n");
@@ -117,18 +128,19 @@ void print_move(uint32_t move) {
     printf("Move: From %d To %d", from_square, to_square);
 
     if (promotion_piece) {
-      printf("| Promotion Piece: %d", promotion_piece);
+      printf(" | Promotion Piece: %d", promotion_piece);
     }
 
     if (move_flags) {
       for (int i = 0; i < 5; i++) {
         if (move_flags & (1 << i)) {
           switch (i) {
-            case 0: printf("| [DOUBLE_PUSH]"); break;
-            case 1: printf("| [CAPTURE]"); break;
-            case 2: printf("| [EN_PASSANT]"); break;
-            case 3: printf("| [MOVE_CASTLING]"); break;
-            case 4: printf("| [PAWN_MOVE]"); break;
+            case 0: printf(" | [DOUBLE_PUSH]"); continue;
+            case 1: printf(" | [CAPTURE]"); continue;
+            case 2: printf(" | [EN_PASSANT]"); continue;
+            case 3: printf(" | [MOVE_CASTLING]"); continue;
+            case 4: printf(" | [PAWN_MOVE]"); continue;
+            default: break;
           }
         }
       }

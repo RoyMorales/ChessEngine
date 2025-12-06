@@ -93,7 +93,7 @@ void main_switch_event(SDL_Event* event, bool* running, uint32_t *move,
         *move_list_piece = *select_pieces_moves(move_list, board_state_ui->board_index);
         render_context->highlight_texture = create_highlight_texture(render_context->renderer, config->window_width, config->window_height, board_state_ui->board_index);
         render_context->highlight_piece_texture = create_piece_highlight_texture(render_context->renderer, config->window_width, config->window_height, move_list_piece);
-        //print_move_list(move_list_piece);
+        print_move_list(move_list_piece);
         board_state_ui->selected_movable_piece = true;
       } else {
         render_context->highlight_texture = create_highlight_texture(render_context->renderer, config->window_width, config->window_height, -1);

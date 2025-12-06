@@ -77,9 +77,13 @@ int main(void) {
   printf("----------------------------\n");
 
   // Initialize game board from FEN
-  char fen_setup[] = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+  //    Normal Setup
+  //char fen_setup[] = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
   //char fen_setup[] = "r1bk3r/p2pBpNp/n4n2/1p1NP2P/6P1/3P4/P1P1K3/q5b1 w KQkq - 0 1";
   //char fen_setup[] = "8/8/8/3N4/8/8/8/7N w KQkq - 0 1";
+  
+  //    To Test Castle rights
+  char fen_setup[] = "r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1";
   
   struct Board game_board = fen_to_bitboards(fen_setup); 
   update_occupancy(&game_board);
@@ -123,7 +127,7 @@ int main(void) {
       printf("----------------------------\n");
       printf("Generated %d moves for player %s\n", move_list.count, (game_board.player_turn == white_player) ? "White" : "Black");
       printf("----------------------------\n");
-      //print_move_list(&move_list);
+      print_move_list(&move_list);
       generate_moves = false;
     }
 
