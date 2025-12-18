@@ -5,7 +5,6 @@
 
 #include <stdint.h>
 
-#include "movegen.h"
 #include "board.h"
 #include "attack.h"
 
@@ -31,7 +30,7 @@
 // uint32_t move representation:
 // Bits 0-5:   From square (0-63)
 // Bits 6-11:  To square (0-63)
-// Bits 12-15: Promotion piece 
+// Bits 12-15: Promotion piece
 // Bits 16-20: Move flags (double push, capture, en passant, castling, pawn move)
 // Bits 21-31: Unused -> for future use
 
@@ -40,8 +39,6 @@ struct MoveList {
     int count;
 };
 
-struct MoveList genrate_board_moves(struct Board* board);
+struct MoveList generate_board_moves(struct Board* board);
 
 #endif
-
-

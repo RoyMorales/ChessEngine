@@ -7,7 +7,6 @@
 #include <stdint.h>
 
 #include "board.h"
-#include "core_util.h"
 
 // Helper function to set a specific bit in a number
 void set_bit(uint64_t* number, int bit) {
@@ -19,14 +18,14 @@ static unsigned char square_from_alg(const char *s) {
   if (!s || s[0] == '\0') return EP_NONE;
     char file = s[0];
     char rank = s[1];
-  if (file >= 'A' && file <= 'H') 
-    file = file - 'A' + 'a'; // allow uppercase 
+  if (file >= 'A' && file <= 'H')
+    file = file - 'A' + 'a'; // allow uppercase
   if (file < 'a' || file > 'h' || rank < '1' || rank > '8') {
-    printf("Invalid en passant square: %s\n", s); 
+    printf("Invalid en passant square: %s\n", s);
     return EP_NONE;
   }
-  unsigned int f = (unsigned int)(file - 'a');   
-  unsigned int r = (unsigned int)(rank - '1');   
+  unsigned int f = (unsigned int)(file - 'a');
+  unsigned int r = (unsigned int)(rank - '1');
   return (unsigned char)(r * 8 + f);
 }
 
@@ -34,7 +33,7 @@ static unsigned char square_from_alg(const char *s) {
 struct Board fen_to_bitboards(char fen_string[]) {
   struct Board board;
   memset(&board, 0, sizeof(board));
-  
+
   char* token = strtok(fen_string, " ");
   int part = 0;
 
@@ -96,13 +95,13 @@ struct Board fen_to_bitboards(char fen_string[]) {
           case 'Q': board.castling_rights |= CASTLE_WQ; break;
           case 'k': board.castling_rights |= CASTLE_BK; break;
           case 'q': board.castling_rights |= CASTLE_BQ; break;
-          case '-': break; 
-          default: break;  
+          case '-': break;
+          default: break;
         }
       }
       printf("Castling Rights: %u\n", board.castling_rights);
     }
-     
+
     else if(part == 3) {
       if (token[0] == '-' && token[1] == '\0') {
         board.en_passant_square = EP_NONE;
@@ -123,16 +122,16 @@ struct Board fen_to_bitboards(char fen_string[]) {
     }
 
     else if(part == 5) {
-      board.counter_turn = token[0] - '0';   
+      board.counter_turn = token[0] - '0';
       printf("Counter Turn: %u\n", board.counter_turn);
     }
 
     part ++;
     token = strtok(NULL, " ");
-  } 
+  }
   printf("----------------------------\n\n");
   return board;
-} 
+}
 
 // Function to update occupancy bitboards
 void update_occupancy(struct Board* board)
@@ -156,7 +155,3 @@ void update_occupancy(struct Board* board)
     board->all_occupied =
         board->white_occupied | board->black_occupied;
 }
-
-
-
-

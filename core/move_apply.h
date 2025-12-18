@@ -4,9 +4,9 @@
 #define MOVE_APPLY_H
 
 #include "board.h"
-#include "movegen.h"
+#include "move_gen.h"
 #include "core_util.h"
 
 void apply_move(struct Board* board, uint32_t move);
 
-#endif 
+#endif

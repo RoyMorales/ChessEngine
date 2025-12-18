@@ -7,7 +7,7 @@
 #include <stdio.h>
 
 #include "board.h"
-#include "movegen.h"
+#include "move_gen.h"
 
 
 #define DOUBLE_PUSH 16
@@ -27,4 +27,3 @@ void print_move(uint32_t move);
 void square_index_to_square_board(unsigned char square_index);
 
 #endif
-

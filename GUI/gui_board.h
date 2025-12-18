@@ -4,7 +4,7 @@
 #include <SDL3/SDL.h>
 
 #include "../core/board.h"
-#include "../core/movegen.h"
+#include "../core/move_gen.h"
 #include "../util/util.h"
 
 struct SDL_Renderer;
@@ -69,5 +69,4 @@ void fast_update_piece_cache(struct RenderContext* render_context,
                              int window_width,
                              int window_height);
 
-#endif 
-
+#endif

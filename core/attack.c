@@ -1,4 +1,4 @@
-// Precompute attack patterns for king, pawn, and knight 
+// Precompute attack patterns for king, pawn, and knight
 // to improve efficiency of move generation
 // Compute sliding attacks for rooks and bishops dynamically
 
@@ -126,7 +126,7 @@ uint64_t orthogonal_attacks(int square, uint64_t occupancy) {
             new_rank += direction_rank;
             new_file += direction_file;
         }
-    } 
+    }
     return attacks;
 }
 
@@ -157,7 +157,7 @@ uint64_t diagonal_attacks(int square, uint64_t occupancy) {
             new_rank += direction_rank;
             new_file += direction_file;
         }
-    } 
+    }
     return attacks;
 }
 
@@ -168,5 +168,3 @@ void init_attack_tables() {
   precompute_black_pawn_attacks(black_pawn_attacks);
   precompute_knight_attacks(knight_attacks);
 }
-
-

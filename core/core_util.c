@@ -2,7 +2,6 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <ctype.h>
 #include <stdlib.h>
 
 #include "core_util.h"
@@ -39,7 +38,7 @@ char* join_board_string(struct Board board) {
   static char board_string[65];
   for (int i = 0; i < 64; i++){
     board_string[i] = '.';
-  } 
+  }
   board_string[64] = '\0'; /* ensure NUL terminator */
 
   size_t num_boards = sizeof(board.bitboards) / sizeof(board.bitboards[0]);
@@ -53,18 +52,18 @@ char* join_board_string(struct Board board) {
       int idx = (BITS - 1 - bit);
 
         switch (i) {
-          case white_king:   board_string[idx] = 'K'; break; 
-          case black_king:   board_string[idx] = 'k'; break; 
-          case white_pawn:   board_string[idx] = 'P'; break; 
-          case black_pawn:   board_string[idx] = 'p'; break; 
-          case white_knight: board_string[idx] = 'N'; break; 
-          case black_knight: board_string[idx] = 'n'; break; 
-          case white_bishop: board_string[idx] = 'B'; break; 
-          case black_bishop: board_string[idx] = 'b'; break; 
-          case white_rook:   board_string[idx] = 'R'; break; 
-          case black_rook:   board_string[idx] = 'r'; break; 
-          case white_queen:  board_string[idx] = 'Q'; break; 
-          case black_queen:  board_string[idx] = 'q'; break; 
+          case white_king:   board_string[idx] = 'K'; break;
+          case black_king:   board_string[idx] = 'k'; break;
+          case white_pawn:   board_string[idx] = 'P'; break;
+          case black_pawn:   board_string[idx] = 'p'; break;
+          case white_knight: board_string[idx] = 'N'; break;
+          case black_knight: board_string[idx] = 'n'; break;
+          case white_bishop: board_string[idx] = 'B'; break;
+          case black_bishop: board_string[idx] = 'b'; break;
+          case white_rook:   board_string[idx] = 'R'; break;
+          case black_rook:   board_string[idx] = 'r'; break;
+          case white_queen:  board_string[idx] = 'Q'; break;
+          case black_queen:  board_string[idx] = 'q'; break;
           default: board_string[idx] = '.'; break;
         }
       }
@@ -81,7 +80,7 @@ void print_board_string(char* string_board) {
     if ((i + 1) % 8 == 0) {
       printf("|\n");
     }
-  } 
+  }
 }
 
 static const char* flag_names[5] = {
@@ -111,7 +110,7 @@ void print_move_list(struct MoveList* move_list) {
       for (int i = 0; i < 5; i++) {
         if (move_flags & (1 << i)) {
           printf(" | [%s]", flag_names[i]);
-        } 
+        }
       }
     }
     printf("\n");
@@ -135,7 +134,7 @@ void print_move(uint32_t move) {
       for (int i = 0; i < 5; i++) {
         if (move_flags & (1 << i)) {
           printf(" | [%s]", flag_names[i]);
-        } 
+        }
       }
     }
   printf("\n");
@@ -144,7 +143,7 @@ void print_move(uint32_t move) {
 void square_index_to_square_board(unsigned char square_index) {
   int file = square_index % 8;      // 0–7
   int rank = square_index / 8;      // 0–7
-  
+
   char file_char = 'a' + file;
   char rank_char = '1' + rank;
 

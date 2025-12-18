@@ -69,8 +69,9 @@ void apply_move(struct Board* board, uint32_t move) {
                 }
 
                 // Double pawn push sets en passant
-                if (piece_type == white_pawn && is_double_push)
+                if (piece_type == white_pawn && is_double_push) {
                     board->en_passant_square = to_square - 8;
+                }
 
                 // Update castling rights if rook moves
                 if (piece_type == white_rook) {
@@ -123,15 +124,16 @@ void apply_move(struct Board* board, uint32_t move) {
                 }
 
                 // Double pawn push sets en passant
-                if (piece_type == black_pawn && is_double_push)
+                if (piece_type == black_pawn && is_double_push) {
                     board->en_passant_square = to_square + 8;
+                }
 
                 // Update castling rights if rook moves
                 if (piece_type == black_rook) {
                     if (from_square == 56) board->castling_rights &= ~CASTLE_BQ;
                     if (from_square == 63) board->castling_rights &= ~CASTLE_BK;
                 }
-
+                
                 break;
             }
         }
@@ -166,7 +168,7 @@ void apply_move(struct Board* board, uint32_t move) {
     // Toggle turn
     board->player_turn = !board->player_turn;
 
-    square_index_to_square_board(board->en_passant_square);
+    //square_index_to_square_board(board->en_passant_square);
 }
 
 

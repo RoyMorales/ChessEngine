@@ -1,8 +1,9 @@
 // Generate move attack for pieces
 
-#include "movegen.h"
+#include "move_gen.h"
 #include <stdio.h>
 
+#define TRACE printf("HERE %s:%d\n", __FILE__, __LINE__);
 
 void generate_king_moves(uint64_t kings, struct MoveList* move_list, uint64_t own_pieces, uint64_t opponent_pieces) {
     while (kings) {
@@ -36,31 +37,31 @@ void generate_castling_moves(struct Board* board, struct MoveList* list) {
         // King must be on E1
         if (!(board->bitboards[white_king] & (1ULL << 4))) return;
 
-        // White kingside castling: E1 → G1
+        // White kingside castling: E1 -> G1
         if (board->castling_rights & WHITE_KINGSIDE) {
             bool empty_f1 = !(occ & (1ULL << 5));
             bool empty_g1 = !(occ & (1ULL << 6));
             if (empty_f1 && empty_g1) {
                 uint32_t move = 0;
-                move |= 4;
-                move |= (6 << 6);
-                move |= (1 << MOVE_CASTLING);
-                
+                move |= 4;                      // From square
+                move |=(6 << 6);               // To square
+                move |= (1 << MOVE_CASTLING);   // Castling flag
+
                 list->moves[list->count++] = move;
             }
         }
 
-        // White queenside castling: E1 → C1
+        // White queenside castling: E1 -> C1
         if (board->castling_rights & WHITE_QUEENSIDE) {
             bool empty_d1 = !(occ & (1ULL << 3));
             bool empty_c1 = !(occ & (1ULL << 2));
             bool empty_b1 = !(occ & (1ULL << 1));
             if (empty_d1 && empty_c1 && empty_b1) {
                 uint32_t move = 0;
-                move |= 4;
-                move |= (2 << 6);                
-                move |= (1 << MOVE_CASTLING);
-                
+                move |= 4;                      // From square
+                move |= (2 << 6);               // To square
+                move |= (1 << MOVE_CASTLING);   // Castling flag
+
                 list->moves[list->count++] = move;
             }
         }
@@ -69,30 +70,30 @@ void generate_castling_moves(struct Board* board, struct MoveList* list) {
         // King must be on E8
         if (!(board->bitboards[black_king] & (1ULL << 60))) return;
 
-        // Black kingside castling: E8 → G8
+        // Black kingside castling: E8 -> G8
         if (board->castling_rights & BLACK_KINGSIDE) {
             bool empty_f8 = !(occ & (1ULL << 61));
             bool empty_g8 = !(occ & (1ULL << 62));
             if (empty_f8 && empty_g8) {
                 uint32_t move = 0;
-                move |= 60;
-                move |= (62 << 6);
-                move |= (1 << MOVE_CASTLING);
+                move |= 60;                     // From square
+                move |= (62 << 6);              // To square
+                move |= (1 << MOVE_CASTLING);   // Castling flag
 
                 list->moves[list->count++] = move;
             }
         }
 
-        // Black queenside castling: E8 → C8
+        // Black queenside castling: E8 -> C8
         if (board->castling_rights & BLACK_QUEENSIDE) {
             bool empty_d8 = !(occ & (1ULL << 59));
             bool empty_c8 = !(occ & (1ULL << 58));
             bool empty_b8 = !(occ & (1ULL << 57));
             if (empty_d8 && empty_c8 && empty_b8) {
                 uint32_t move = 0;
-                move |= 60;
-                move |= (58 << 6);
-                move |= (1 << MOVE_CASTLING);
+                move |= 60;                     // From square
+                move |= (58 << 6);              // To square
+                move |= (1 << MOVE_CASTLING);   // Castling flag
 
                 list->moves[list->count++] = move;
             }
@@ -104,7 +105,7 @@ void generate_castling_moves(struct Board* board, struct MoveList* list) {
 void generate_white_pawn_push_moves(uint64_t pawns, struct MoveList* move_list, uint64_t occupancy) {
     while (pawns) {
         int from = __builtin_ctzll(pawns);
-        pawns &= pawns - 1;
+        pawns &= pawns - 1;  // Clear the least signigicant bit
 
         int to = from + 8;
         if (to >= 64 || (occupancy & (1ULL << to))) continue;
@@ -127,7 +128,7 @@ void generate_white_pawn_push_moves(uint64_t pawns, struct MoveList* move_list, 
             move |= (1 << PAWN_MOVE);    // Pawn Move Flag
 
             move_list->moves[move_list->count++] = move;
-        }
+        } 
     }
 }
 
@@ -135,7 +136,7 @@ void generate_white_pawn_push_moves(uint64_t pawns, struct MoveList* move_list, 
 void generate_black_pawn_push_moves(uint64_t pawns, struct MoveList* move_list, uint64_t occupancy) {
     while (pawns) {
         int from = __builtin_ctzll(pawns);
-        pawns &= pawns - 1;
+        pawns &= pawns - 1;  // Clear the least signigicant bit
 
         int to = from - 8;
         if (to < 0 || (occupancy & (1ULL << to))) continue;
@@ -172,7 +173,6 @@ void generate_white_pawn_capture_moves(uint64_t pawns, struct MoveList* move_lis
 
         while (captures) {
             int to = __builtin_ctzll(captures);
-            captures &= captures - 1;
 
             // PROMOTION CAPTURE
             if (to >= 56) {
@@ -196,6 +196,7 @@ void generate_white_pawn_capture_moves(uint64_t pawns, struct MoveList* move_lis
 
                 move_list->moves[move_list->count++] = move;
             }
+            captures &= captures - 1; // Clear the least signigicant bit
         }
     }
 }
@@ -210,7 +211,6 @@ void generate_black_pawn_capture_moves(uint64_t pawns, struct MoveList* move_lis
 
         while (captures) {
             int to = __builtin_ctzll(captures);
-            captures &= captures - 1;
 
             // PROMOTION CAPTURE
             if (to >= 7) {
@@ -227,13 +227,14 @@ void generate_black_pawn_capture_moves(uint64_t pawns, struct MoveList* move_lis
                 }
             } else {
                 uint32_t move = 0;
-                move |= from;                         // From Square                 
+                move |= from;                         // From Square
                 move |= (to << 6);                    // To Square
                 move |= (1 << CAPTURE);               // Capture Flag
                 move |= (1 << PAWN_MOVE);             // Pawn Move Flag
 
                 move_list->moves[move_list->count++] = move;
             }
+            captures &= captures - 1; // Clear the least signigicant bit
         }
     }
 }
@@ -248,7 +249,7 @@ void generate_white_pawn_double_push_moves(uint64_t pawns, struct MoveList* move
         if (from_square / 8 == 1 &&
             !(occupancy & (1ULL << (from_square + 8))) &&
             !(occupancy & (1ULL << to_square))) {
-            
+
             uint32_t move = 0;
             move |= from_square;              // From square
             move |= (to_square << 6);         // To square
@@ -271,7 +272,7 @@ void generate_black_pawn_double_push_moves(uint64_t pawns, struct MoveList* move
         if (from_square / 8 == 6 &&
             !(occupancy & (1ULL << (from_square - 8))) &&
             !(occupancy & (1ULL << to_square))) {
-            
+
             uint32_t move = 0;
             move |= from_square;              // From square
             move |= (to_square << 6);         // To square
@@ -284,8 +285,7 @@ void generate_black_pawn_double_push_moves(uint64_t pawns, struct MoveList* move
     }
 }
 
-void generate_white_pawn_en_passant_moves(uint64_t pawns, struct MoveList* move_list,
-                                          uint64_t opponent_pawns, int en_passant_square) {
+void generate_white_pawn_en_passant_moves(uint64_t pawns, struct MoveList* move_list, int en_passant_square) {
     if (en_passant_square == EP_NONE) return;
 
     int ep = en_passant_square;
@@ -296,29 +296,30 @@ void generate_white_pawn_en_passant_moves(uint64_t pawns, struct MoveList* move_
     // LEFT pawn
     if (left_from >= 0 && (pawns & (1ULL << left_from))) {
         uint32_t move = 0;
-        move |= left_from;
-        move |= (ep << 6);
-        move |= (1 << EN_PASSANT);
-        move |= (1 << CAPTURE);
-        move |= (1 << PAWN_MOVE);
+        move |= left_from;                   // From square
+        move |= (ep << 6);                   // To Square
+        move |= (1 << EN_PASSANT);           // En Passant flag
+        move |= (1 << CAPTURE);              // Capture flag
+        move |= (1 << PAWN_MOVE);            // Pawn move flag
+
         move_list->moves[move_list->count++] = move;
     }
 
     // RIGHT pawn
     if (right_from >= 0 && (pawns & (1ULL << right_from))) {
         uint32_t move = 0;
-        move |= right_from;
-        move |= (ep << 6);
-        move |= (1 << EN_PASSANT);
-        move |= (1 << CAPTURE);
-        move |= (1 << PAWN_MOVE);
+        move |= right_from;                  // From square
+        move |= (ep << 6);                   // To Square
+        move |= (1 << EN_PASSANT);           // En Passant flag
+        move |= (1 << CAPTURE);              // Capture flag
+        move |= (1 << PAWN_MOVE);            // Pawn move flag
+
         move_list->moves[move_list->count++] = move;
     }
 }
 
 
-void generate_black_pawn_en_passant_moves(uint64_t pawns, struct MoveList* move_list,
-                                          uint64_t opponent_pawns, int en_passant_square) {
+void generate_black_pawn_en_passant_moves(uint64_t pawns, struct MoveList* move_list, int en_passant_square) {
     if (en_passant_square == EP_NONE) return;
 
     int ep = en_passant_square;
@@ -329,22 +330,24 @@ void generate_black_pawn_en_passant_moves(uint64_t pawns, struct MoveList* move_
     // LEFT pawn
     if (left_from < 64 && (pawns & (1ULL << left_from))) {
         uint32_t move = 0;
-        move |= left_from;
-        move |= (ep << 6);
-        move |= (1 << EN_PASSANT);
-        move |= (1 << CAPTURE);
-        move |= (1 << PAWN_MOVE);
+        move |= left_from;                   // From square
+        move |= (ep << 6);                   // To Square
+        move |= (1 << EN_PASSANT);           // En Passant flag
+        move |= (1 << CAPTURE);              // Capture flag
+        move |= (1 << PAWN_MOVE);            // Pawn move flag
+
         move_list->moves[move_list->count++] = move;
     }
 
     // RIGHT pawn
     if (right_from < 64 && (pawns & (1ULL << right_from))) {
         uint32_t move = 0;
-        move |= right_from;
-        move |= (ep << 6);
-        move |= (1 << EN_PASSANT);
-        move |= (1 << CAPTURE);
-        move |= (1 << PAWN_MOVE);
+        move |= right_from;                   // From square
+        move |= (ep << 6);                   // To Square
+        move |= (1 << EN_PASSANT);           // En Passant flag
+        move |= (1 << CAPTURE);              // Capture flag
+        move |= (1 << PAWN_MOVE);            // Pawn move flag
+
         move_list->moves[move_list->count++] = move;
     }
 }
@@ -354,7 +357,7 @@ void generate_white_pawn_moves(uint64_t pawns, struct MoveList* move_list, uint6
     generate_white_pawn_push_moves(pawns, move_list, occupancy);
     generate_white_pawn_double_push_moves(pawns, move_list, occupancy);
     generate_white_pawn_capture_moves(pawns, move_list, opponent_pieces);
-    generate_white_pawn_en_passant_moves(pawns, move_list, opponent_pieces, en_passant_square);
+    generate_white_pawn_en_passant_moves(pawns, move_list, en_passant_square);
 }
 
 
@@ -362,7 +365,7 @@ void generate_black_pawn_moves(uint64_t pawns, struct MoveList* move_list, uint6
     generate_black_pawn_push_moves(pawns, move_list, occupancy);
     generate_black_pawn_double_push_moves(pawns, move_list, occupancy);
     generate_black_pawn_capture_moves(pawns, move_list, opponent_pieces);
-    generate_black_pawn_en_passant_moves(pawns, move_list, opponent_pieces, en_passant_square);
+    generate_black_pawn_en_passant_moves(pawns, move_list, en_passant_square);
 }
 
 
@@ -468,7 +471,7 @@ void generate_queen_moves(uint64_t queens, struct MoveList* move_list, uint64_t 
 }
 
 
-struct MoveList genrate_board_moves(struct Board* board) {
+struct MoveList generate_board_moves(struct Board* board) {
     struct MoveList move_list;
     move_list.count = 0;
 
@@ -493,4 +496,3 @@ struct MoveList genrate_board_moves(struct Board* board) {
     }
     return move_list;
 }
-
