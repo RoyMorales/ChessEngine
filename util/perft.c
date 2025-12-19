@@ -34,73 +34,61 @@ void print_move_perft(uint32_t move) {
 }
 
 
-uint64_t perft(struct Board* board, int depth) {
-    if (depth == 0) return 1;
-
-    uint64_t nodes = 0;
+void perft_count(struct Board* board, int depth, struct PerftStats* stats) {
+    if (depth == 0) {
+        stats->nodes += 1;
+        return;
+    }
 
     struct MoveList moves = generate_legal_moves(board);
 
     for (int i = 0; i < moves.count; i++) {
         uint32_t move = moves.moves[i];
 
-        struct Board backup = *board;   // TEMP copy (slow but correct)
+        struct Board backup = *board;
 
         apply_move(board, move);
-        nodes += perft(board, depth - 1);
 
-        *board = backup;                // restore board
+        // Update stats for this move
+        if ((move >> CAPTURE) & 0x1) stats->captures++;
+        if ((move >> EN_PASSANT) & 0x1) stats->ep++;
+        if ((move >> MOVE_CASTLING) & 0x1) stats->castles++;
+        if (((move >> 12) & 0xF) != 0) stats->promotions++;
+
+        perft_count(board, depth - 1, stats);
+
+        *board = backup;
     }
-
-    return nodes;
-}
-
-
-uint64_t perft_divide(struct Board* board, int depth) {
-    struct MoveList moves = generate_legal_moves(board);
-    uint64_t total_nodes = 0;
-
-    for (int i = 0; i < moves.count; i++) {
-        struct Board board_copy = *board;  // Make a copy
-        apply_move(&board_copy, moves.moves[i]);
-
-        uint64_t nodes = 0;
-        if (depth - 1 > 0) {
-            nodes = perft(&board_copy, depth - 1);
-        } else {
-            nodes = 1;  // Leaf node
-        }
-
-        total_nodes += nodes;
-        
-        print_move_perft(moves.moves[i]);
-        printf("Nodes: %lu\n", nodes);
-    }
-    return total_nodes;
 }
 
 
 int main(int argc, char** argv) {
-    char fen_setup[] = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+    char fen_setup[] = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - ";
+
     struct Board board = fen_to_bitboards(fen_setup);
     update_occupancy(&board);
     init_attack_tables();
 
     int depth = 4;
-    if (argc > 1) {
-        depth = atoi(argv[1]);
-    }
+    if (argc > 1) depth = atoi(argv[1]);
+
+    struct PerftStats stats = {0};
 
     clock_t start = clock();
-    uint64_t nodes = perft_divide(&board, depth);
+    perft_count(&board, depth, &stats);
     clock_t end = clock();
 
     double exe_time = (double)(end - start) / CLOCKS_PER_SEC;
-    
+
     printf("----------------------------\n");
-    printf("PERFT(%d) = %lu\n", depth, nodes);
+    printf("PERFT(%d) = %lu\n", depth, stats.nodes);
+    printf("Captures: %lu\n", stats.captures);
+    printf("En Passant: %lu\n", stats.ep);
+    printf("Castles: %lu\n", stats.castles);
+    printf("Promotions: %lu\n", stats.promotions);
     printf("Exe Time: %.3f s \n", exe_time);
     printf("----------------------------\n");
 
     return 0;
 }
+

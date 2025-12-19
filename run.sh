@@ -2,7 +2,7 @@
 # Simple launcher for SDL3 program on Wayland
 
 # Path to your executable
-EXEC="./ChessEngine"
+EXEC="./ChessGUI"
 
 # Force Wayland driver
 export SDL_VIDEODRIVER=wayland

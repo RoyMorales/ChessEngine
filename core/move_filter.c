@@ -9,41 +9,45 @@
 
 
 // Unnecessary recalculation of all attackers
-bool is_square_attacked(struct Board* board, int square, bool player_side) {
+bool is_square_attacked(struct Board* board, int square, bool by_white) {
     uint64_t attackers;
 
-    if (player_side) {
-        if (square >= 7 && (board->bitboards[white_pawn] & (1ULL << (square - 7)))) return true;
-        if (square >= 9 && (board->bitboards[white_pawn] & (1ULL << (square - 9)))) return true;
+    if (by_white) {
+        // White pawns attack
+        if ((square >= 9) && ((square % 8) != 0) && (board->bitboards[white_pawn] & (1ULL << (square - 9)))) return true;
+        if ((square >= 7) && ((square % 8) != 7) && (board->bitboards[white_pawn] & (1ULL << (square - 7)))) return true;
 
+        // Knights and king
         if (knight_attacks[square] & board->bitboards[white_knight]) return true;
         if (king_attacks[square] & board->bitboards[white_king]) return true;
 
+        // Bishop/Queen (diagonal)
         attackers = diagonal_attacks(square, board->all_occupied);
-        if (attackers & (board->bitboards[white_bishop] | board->bitboards[white_queen]))
-            return true;
+        if (attackers & (board->bitboards[white_bishop] | board->bitboards[white_queen])) return true;
 
+        // Rook/Queen (orthogonal)
         attackers = orthogonal_attacks(square, board->all_occupied);
-        if (attackers & (board->bitboards[white_rook] | board->bitboards[white_queen]))
-            return true;
-    }
-    else {
-        if (square <= 56 && (board->bitboards[black_pawn] & (1ULL << (square + 7)))) return true;
-        if (square <= 54 && (board->bitboards[black_pawn] & (1ULL << (square + 9)))) return true;
+        if (attackers & (board->bitboards[white_rook] | board->bitboards[white_queen])) return true;
+    } else {
+        // Black pawns attack
+        if ((square <= 54) && ((square % 8) != 0) && (board->bitboards[black_pawn] & (1ULL << (square + 7)))) return true;
+        if ((square <= 55) && ((square % 8) != 7) && (board->bitboards[black_pawn] & (1ULL << (square + 9)))) return true;
 
+        // Knights and king
         if (knight_attacks[square] & board->bitboards[black_knight]) return true;
         if (king_attacks[square] & board->bitboards[black_king]) return true;
 
+        // Bishop/Queen (diagonal)
         attackers = diagonal_attacks(square, board->all_occupied);
-        if (attackers & (board->bitboards[black_bishop] | board->bitboards[black_queen]))
-            return true;
+        if (attackers & (board->bitboards[black_bishop] | board->bitboards[black_queen])) return true;
 
+        // Rook/Queen (orthogonal)
         attackers = orthogonal_attacks(square, board->all_occupied);
-        if (attackers & (board->bitboards[black_rook] | board->bitboards[black_queen]))
-            return true;
+        if (attackers & (board->bitboards[black_rook] | board->bitboards[black_queen])) return true;
     }
     return false;
 }
+
 
 
 int get_king_square(struct Board* board, bool player_colour) {
@@ -63,19 +67,15 @@ bool check_castling_legality(struct Board* board, uint32_t move) {
         if (((move & 0x3F) == 4) && (((move >> 6) & 0x3F) == 6)) {
             if (is_square_attacked(board, 4, white_player) ||
                 is_square_attacked(board, 5, white_player) ||
-                is_square_attacked(board, 6, white_player)) {
-                    printf("White kingside castling illegal\n");
+                is_square_attacked(board, 6, white_player))
                 return false;
-            }
         }
         // White queenside castling
         else if (((move & 0x3F) == 4) && (((move >> 6) & 0x3F) == 2)) {
             if (is_square_attacked(board, 4, white_player) ||
                 is_square_attacked(board, 3, white_player) ||
-                is_square_attacked(board, 2, white_player)) {
-                    printf("White queenside castling illegal\n");
+                is_square_attacked(board, 2, white_player))
                 return false;
-            }
         }
     } else {
         // Black kingside castling
@@ -90,9 +90,8 @@ bool check_castling_legality(struct Board* board, uint32_t move) {
         else if (((move & 0x3F) == 60) && (((move >> 6) & 0x3F) == 58)) {
             if (is_square_attacked(board, 60, black_player) ||
                 is_square_attacked(board, 59, black_player) ||
-                is_square_attacked(board, 58, black_player)) {
+                is_square_attacked(board, 58, black_player)) 
                 return false;
-            }
         }
     }
     return true;
@@ -104,11 +103,18 @@ bool is_legal_move(struct Board* board, uint32_t move) {
 
     if (move >> MOVE_CASTLING & 0x1) return check_castling_legality(&board_copy, move);
 
+    int from_square = move & 0x3F;
+    int to_square   = (move >> 6) & 0x3F;
+    bool is_ep = (move >> EN_PASSANT) & 0x1;
+    
     // Changes Player Side 
     apply_move(&board_copy, move);
     int king_square = get_king_square(&board_copy, board_copy.player_turn);
-    return !is_square_attacked(&board_copy, king_square, !board_copy.player_turn);
-    
+
+    if (is_square_attacked(&board_copy, king_square, !board_copy.player_turn)) return false;
+    if (is_ep && (is_square_attacked(&board_copy, king_square, !board_copy.player_turn))) return false;
+   
+   return true;
 }
 
 

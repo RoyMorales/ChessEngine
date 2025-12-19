@@ -6,8 +6,13 @@
 #include "../core/move_gen.h"
 #include "../core/move_filter.h"
 
-#define MAX_MOVES 256
-
+struct PerftStats {
+    uint64_t nodes;
+    uint64_t captures;
+    uint64_t ep;
+    uint64_t castles;
+    uint64_t promotions;
+};
 
 struct Config {
     int window_width;
