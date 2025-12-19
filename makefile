@@ -1,35 +1,74 @@
 # Compiler
 CC := gcc
 
+# -------------------------
 # Source files
-SRC := main.c util/config_reader.c util/fps_counter.c \
-			  GUI/chessboard.c GUI/events.c \
-			  core/core_util.c core/board.c core/attack.c core/move_gen.c core/move_filter.c core/move_apply.c
+# -------------------------
 
-OBJ := $(SRC:.c=.o)
+# Engine core (shared)
+ENGINE_SRC := \
+	core/core_util.c \
+	core/board.c \
+	core/attack.c \
+	core/move_gen.c \
+	core/move_filter.c \
+	core/move_apply.c 	
 
-# Target
-TARGET := ChessEngine
+# GUI-specific
+GUI_SRC := \
+	main.c \
+	GUI/chessboard.c \
+	GUI/events.c \
+	util/fps_counter.c \
+	util/config_reader.c
 
-# Adjust paths as needed
+# PERFT-specific
+PERFT_SRC := \
+	util/perft.c
+
+# -------------------------
+# Object files
+# -------------------------
+ENGINE_OBJ := $(ENGINE_SRC:.c=.o)
+GUI_OBJ    := $(GUI_SRC:.c=.o)
+PERFT_OBJ  := $(PERFT_SRC:.c=.o)
+
+# -------------------------
+# Targets
+# -------------------------
+GUI_TARGET   := ChessGUI
+PERFT_TARGET := perft
+
+# Includes / libs
 INCLUDES := -I/usr/local/include/SDL3 -I/usr/local/include/SDL3_image
 LIBS := -L/usr/local/lib -lSDL3_image -lSDL3
 
-# Compiler flags
 CFLAGS := -Wall -Wextra -g -O0 $(INCLUDES)
 LDFLAGS := $(LIBS)
 
+# -------------------------
 # Rules
+# -------------------------
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
-all: $(TARGET)
+# Default target
+all: $(GUI_TARGET)
 
-$(TARGET): $(OBJ)
-	$(CC) $(OBJ) -o $(TARGET) $(LDFLAGS)
+# GUI build
+$(GUI_TARGET): $(ENGINE_OBJ) $(GUI_OBJ)
+	$(CC) $^ -o $@ $(LDFLAGS)
+
+# PERFT build (NO GUI, NO SDL)
+$(PERFT_TARGET): $(ENGINE_OBJ) $(PERFT_OBJ)
+	$(CC) $^ -o $@
 
 clean:
-	rm -f $(OBJ) $(TARGET)
+	rm -f $(ENGINE_OBJ) $(GUI_OBJ) $(PERFT_OBJ) $(GUI_TARGET) $(PERFT_TARGET)
 
-run: $(TARGET)
+run: $(GUI_TARGET)
 	./run.sh
+
+run-perft: $(PERFT_TARGET)
+	./perft
+

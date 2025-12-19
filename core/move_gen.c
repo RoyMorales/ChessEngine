@@ -285,70 +285,72 @@ void generate_black_pawn_double_push_moves(uint64_t pawns, struct MoveList* move
     }
 }
 
-void generate_white_pawn_en_passant_moves(uint64_t pawns, struct MoveList* move_list, int en_passant_square) {
-    if (en_passant_square == EP_NONE) return;
+void generate_white_pawn_en_passant_moves(uint64_t pawns, struct MoveList* move_list, int ep_square) {
+    if (ep_square == EP_NONE) return;
 
-    int ep = en_passant_square;
+    int ep_file = ep_square % 8;
 
-    int left_from  = ep - 9;  // white pawn at ep-9 captures ep
-    int right_from = ep - 7;  // white pawn at ep-7 captures ep
-
-    // LEFT pawn
-    if (left_from >= 0 && (pawns & (1ULL << left_from))) {
-        uint32_t move = 0;
-        move |= left_from;                   // From square
-        move |= (ep << 6);                   // To Square
-        move |= (1 << EN_PASSANT);           // En Passant flag
-        move |= (1 << CAPTURE);              // Capture flag
-        move |= (1 << PAWN_MOVE);            // Pawn move flag
-
-        move_list->moves[move_list->count++] = move;
+    // Left capture: pawn on file-1, rank-1
+    if (ep_file > 0) {
+        int from_square = ep_square - 9; // rank-1, file-1
+        if (pawns & (1ULL << from_square)) {
+            uint32_t move = 0;
+            move |= from_square;
+            move |= (ep_square << 6);
+            move |= (1 << EN_PASSANT);
+            move |= (1 << CAPTURE);
+            move |= (1 << PAWN_MOVE);
+            move_list->moves[move_list->count++] = move;
+        }
     }
 
-    // RIGHT pawn
-    if (right_from >= 0 && (pawns & (1ULL << right_from))) {
-        uint32_t move = 0;
-        move |= right_from;                  // From square
-        move |= (ep << 6);                   // To Square
-        move |= (1 << EN_PASSANT);           // En Passant flag
-        move |= (1 << CAPTURE);              // Capture flag
-        move |= (1 << PAWN_MOVE);            // Pawn move flag
-
-        move_list->moves[move_list->count++] = move;
+    // Right capture: pawn on file+1, rank-1
+    if (ep_file < 7) {
+        int from_square = ep_square - 7; // rank-1, file+1
+        if (pawns & (1ULL << from_square)) {
+            uint32_t move = 0;
+            move |= from_square;
+            move |= (ep_square << 6);
+            move |= (1 << EN_PASSANT);
+            move |= (1 << CAPTURE);
+            move |= (1 << PAWN_MOVE);
+            move_list->moves[move_list->count++] = move;
+        }
     }
 }
 
 
-void generate_black_pawn_en_passant_moves(uint64_t pawns, struct MoveList* move_list, int en_passant_square) {
-    if (en_passant_square == EP_NONE) return;
+void generate_black_pawn_en_passant_moves(uint64_t pawns, struct MoveList* move_list, int ep_square) {
+    if (ep_square == EP_NONE) return;
 
-    int ep = en_passant_square;
+    int ep_file = ep_square % 8;
 
-    int left_from  = ep + 7;
-    int right_from = ep + 9;
-
-    // LEFT pawn
-    if (left_from < 64 && (pawns & (1ULL << left_from))) {
-        uint32_t move = 0;
-        move |= left_from;                   // From square
-        move |= (ep << 6);                   // To Square
-        move |= (1 << EN_PASSANT);           // En Passant flag
-        move |= (1 << CAPTURE);              // Capture flag
-        move |= (1 << PAWN_MOVE);            // Pawn move flag
-
-        move_list->moves[move_list->count++] = move;
+    // Left capture: pawn on file-1, rank-1
+    if (ep_file > 0) {
+        int from_square = ep_square + 9; // rank-1, file-1
+        if (pawns & (1ULL << from_square)) {
+            uint32_t move = 0;
+            move |= from_square;
+            move |= (ep_square << 6);
+            move |= (1 << EN_PASSANT);
+            move |= (1 << CAPTURE);
+            move |= (1 << PAWN_MOVE);
+            move_list->moves[move_list->count++] = move;
+        }
     }
 
-    // RIGHT pawn
-    if (right_from < 64 && (pawns & (1ULL << right_from))) {
-        uint32_t move = 0;
-        move |= right_from;                   // From square
-        move |= (ep << 6);                   // To Square
-        move |= (1 << EN_PASSANT);           // En Passant flag
-        move |= (1 << CAPTURE);              // Capture flag
-        move |= (1 << PAWN_MOVE);            // Pawn move flag
-
-        move_list->moves[move_list->count++] = move;
+    // Right capture: pawn on file+1, rank-1
+    if (ep_file < 7) {
+        int from_square = ep_square + 7; // rank-1, file+1
+        if (pawns & (1ULL << from_square)) {
+            uint32_t move = 0;
+            move |= from_square;
+            move |= (ep_square << 6);
+            move |= (1 << EN_PASSANT);
+            move |= (1 << CAPTURE);
+            move |= (1 << PAWN_MOVE);
+            move_list->moves[move_list->count++] = move;
+        }
     }
 }
 

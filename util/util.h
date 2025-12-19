@@ -2,6 +2,12 @@
 #define UTIL_H
 
 #include <stdint.h>
+#include "../core/board.h"
+#include "../core/move_gen.h"
+#include "../core/move_filter.h"
+
+#define MAX_MOVES 256
+
 
 struct Config {
     int window_width;
@@ -16,6 +22,7 @@ struct FPSCounter {
 };
 
 int config_reader(const char* filename, struct Config* config);
+
 void fps_init(struct FPSCounter* c);
 void fps_update_terminal(struct FPSCounter* c, double x);
 

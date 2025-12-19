@@ -4,7 +4,7 @@
 
 void apply_move(struct Board* board, uint32_t move) {
 
-    print_move(move);
+    //print_move(move);
 
     int from_square = move & 0x3F;
     int to_square   = (move >> 6) & 0x3F;
