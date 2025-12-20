@@ -43,8 +43,8 @@ PERFT_TARGET := perft
 INCLUDES := -I/usr/local/include/SDL3 -I/usr/local/include/SDL3_image
 LIBS := -L/usr/local/lib -lSDL3_image -lSDL3
 
-CFLAGS := -Wall -Wextra -g -O0 $(INCLUDES)
-LDFLAGS := $(LIBS)
+CFLAGS := -Wall -Wextra -O3 -fopenmp $(INCLUDES)
+LDFLAGS := -fopenmp $(LIBS)
 
 # -------------------------
 # Rules
@@ -61,7 +61,7 @@ $(GUI_TARGET): $(ENGINE_OBJ) $(GUI_OBJ)
 
 # PERFT build (NO GUI, NO SDL)
 $(PERFT_TARGET): $(ENGINE_OBJ) $(PERFT_OBJ)
-	$(CC) $^ -o $@
+	$(CC) $^ -o $@ $(LDFLAGS)
 
 clean:
 	rm -f $(ENGINE_OBJ) $(GUI_OBJ) $(PERFT_OBJ) $(GUI_TARGET) $(PERFT_TARGET)

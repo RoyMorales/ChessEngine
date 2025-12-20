@@ -119,28 +119,40 @@ void print_move_list(struct MoveList* move_list) {
 }
 
 void print_move(uint32_t move) {
-    int from_square = move & 0x3F;               // Bits 0-5
-    int to_square = (move >> 6) & 0x3F;          // Bits 6-11
-    int promotion_piece = (move >> 12) & 0x0F;   // Bits 12-15
-    int move_flags = (move >> 16) & 0x1F;        // Bits 16-20
+  char from_square_board[2];
+  char to_square_board[2];
 
-    printf("Move: From %d To %d", from_square, to_square);
+  int from_square = move & 0x3F;               // Bits 0-5
+  int to_square = (move >> 6) & 0x3F;          // Bits 6-11
+  int promotion_piece = (move >> 12) & 0x0F;   // Bits 12-15
+  int move_flags = (move >> 16) & 0x1F;        // Bits 16-20
 
-    if (promotion_piece) {
-      printf(" | Promotion Piece: %d", promotion_piece);
-    }
+  square_index_to_square(from_square, from_square_board);
+  square_index_to_square(to_square, to_square_board);
 
-    if (move_flags) {
-      for (int i = 0; i < 5; i++) {
-        if (move_flags & (1 << i)) {
-          printf(" | [%s]", flag_names[i]);
-        }
+  printf("Move: From %c%c To %c%c", from_square_board[0], from_square_board[1], to_square_board[0], to_square_board[1]);
+
+  if (promotion_piece) {
+    printf(" | Promotion Piece: %d", promotion_piece);
+  }
+
+  if (move_flags) {
+    for (int i = 0; i < 5; i++) {
+      if (move_flags & (1 << i)) {
+        printf(" | [%s]", flag_names[i]);
       }
     }
+  }
   printf("\n");
 }
 
-void square_index_to_square_board(unsigned char square_index) {
+void square_index_to_square(int square, char out[2]) {
+    out[0] = 'a' + (square % 8);   // file
+    out[1] = '1' + (square / 8);   // rank
+}
+
+
+void square_index_to_square_board(int square_index) {
   int file = square_index % 8;      // 0–7
   int rank = square_index / 8;      // 0–7
 

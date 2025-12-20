@@ -103,8 +103,8 @@ bool is_legal_move(struct Board* board, uint32_t move) {
 
     if (move >> MOVE_CASTLING & 0x1) return check_castling_legality(&board_copy, move);
 
-    int from_square = move & 0x3F;
-    int to_square   = (move >> 6) & 0x3F;
+    //int from_square = move & 0x3F;
+    //int to_square   = (move >> 6) & 0x3F;
     bool is_ep = (move >> EN_PASSANT) & 0x1;
     
     // Changes Player Side 

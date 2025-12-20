@@ -213,7 +213,7 @@ void generate_black_pawn_capture_moves(uint64_t pawns, struct MoveList* move_lis
             int to = __builtin_ctzll(captures);
 
             // PROMOTION CAPTURE
-            if (to >= 7) {
+            if (to <= 7) {
                 int promo_pieces[4] = {PROMOTION_QUEEN, PROMOTION_ROOK, PROMOTION_BISHOP, PROMOTION_KNIGHT};
                 for (int i = 0; i < 4; i++) {
                     uint32_t move = 0;
@@ -289,7 +289,10 @@ void generate_white_pawn_en_passant_moves(uint64_t pawns, struct MoveList* move_
     if (ep_square == EP_NONE) return;
 
     int ep_file = ep_square % 8;
+    int ep_rank = ep_square / 8;
 
+    if (ep_rank != 5) return; // White can only capture en passant on rank 6
+    
     // Left capture: pawn on file-1, rank-1
     if (ep_file > 0) {
         int from_square = ep_square - 9; // rank-1, file-1
@@ -324,10 +327,13 @@ void generate_black_pawn_en_passant_moves(uint64_t pawns, struct MoveList* move_
     if (ep_square == EP_NONE) return;
 
     int ep_file = ep_square % 8;
+    int ep_rank = ep_square / 8;
+
+    if (ep_rank != 2) return; // Black can only capture en passant on rank 3
 
     // Left capture: pawn on file-1, rank-1
     if (ep_file > 0) {
-        int from_square = ep_square + 9; // rank-1, file-1
+        int from_square = ep_square + 7; // rank-1, file-1
         if (pawns & (1ULL << from_square)) {
             uint32_t move = 0;
             move |= from_square;
@@ -341,7 +347,7 @@ void generate_black_pawn_en_passant_moves(uint64_t pawns, struct MoveList* move_
 
     // Right capture: pawn on file+1, rank-1
     if (ep_file < 7) {
-        int from_square = ep_square + 7; // rank-1, file+1
+        int from_square = ep_square + 9; // rank-1, file+1
         if (pawns & (1ULL << from_square)) {
             uint32_t move = 0;
             move |= from_square;
