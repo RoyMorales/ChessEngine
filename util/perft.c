@@ -5,35 +5,6 @@
 #include <stdlib.h>
 
 
-void print_move_perft(uint32_t move) {
-    int from = move & 0x3F;
-    int to = (move >> 6) & 0x3F;
-    int flags = move >> 12;
-
-    // Basic move notation
-    char move_str[16];
-    snprintf(move_str, sizeof(move_str), "%c%d -> %c%d",
-             'a' + (from % 8), 1 + (from / 8),
-             'a' + (to % 8), 1 + (to / 8));
-
-    // Add special flags
-    if (flags & (1 << CAPTURE))       printf("%s x", move_str);
-    else                               printf("%s", move_str);
-
-    if (flags & (1 << MOVE_CASTLING)) printf(" (castle)");
-    if (flags & (1 << DOUBLE_PUSH))   printf(" (2x)");
-    if (flags & (1 << EN_PASSANT))    printf(" (ep)");
-
-    // Promotion
-    if (flags & PROMOTION_QUEEN)      printf("=Q");
-    if (flags & PROMOTION_ROOK)       printf("=R");
-    if (flags & PROMOTION_BISHOP)     printf("=B");
-    if (flags & PROMOTION_KNIGHT)     printf("=N");
-
-    printf("\n");
-}
-
-
 void perft_count(struct Board* board, int depth, struct PerftStats* stats) {
     if (depth == 0) {
         stats->nodes += 1;
@@ -71,10 +42,10 @@ void perft_count(struct Board* board, int depth, struct PerftStats* stats) {
 
 
 int main(int argc, char** argv) {
-    //char fen_setup[] = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 ";
+    char fen_setup[] = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 ";
     //char fen_setup[] = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - ";
     //char fen_setup[] = "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1 ";
-    char fen_setup[] = "r2q1rk1/pP1p2pp/Q4n2/bbp1p3/Np6/1B3NBn/pPPP1PPP/R3K2R b KQ - 0 1 ";
+    //char fen_setup[] = "r2q1rk1/pP1p2pp/Q4n2/bbp1p3/Np6/1B3NBn/pPPP1PPP/R3K2R b KQ - 0 1 ";
 
     struct Board board = fen_to_bitboards(fen_setup);
     update_occupancy(&board);

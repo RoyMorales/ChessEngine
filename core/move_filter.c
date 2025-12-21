@@ -118,6 +118,60 @@ bool is_legal_move(struct Board* board, uint32_t move) {
 }
 
 
+// Doesnt work
+bool is_legal_move_fast(struct Board* board, uint32_t move) {
+    int from = move & 0x3F;
+    int to   = (move >> 6) & 0x3F;
+
+    //bool is_castle = (move >> MOVE_CASTLING) & 1;
+    //bool is_ep     = (move >> EN_PASSANT) & 1;
+    bool is_capture= (move >> CAPTURE) & 1;
+
+    int side = board->player_turn;
+
+    // Save only what's needed
+    uint64_t captured_piece = 0;
+    if (is_capture) {
+        for (int i = side; i < 12; i += 2) {
+            if (board->bitboards[i ^ 1] & (1ULL << to)) {
+                captured_piece = board->bitboards[i ^ 1] & (1ULL << to);
+                board->bitboards[i ^ 1] &= ~(1ULL << to);
+                break;
+            }
+        }
+    }
+
+    // Move the piece (temporarily)
+    int piece_type = -1;
+    for (int i = side; i < 12; i += 2) {
+        if (board->bitboards[i] & (1ULL << from)) {
+            piece_type = i;
+            board->bitboards[i] &= ~(1ULL << from);
+            board->bitboards[i] |= (1ULL << to);
+            break;
+        }
+    }
+
+    int king_sq = (piece_type == white_king || piece_type == black_king) ? to :
+                  get_king_square(board, side);
+
+    // Check if king is attacked
+    bool legal = !is_square_attacked(board, king_sq, !side);
+
+    // Undo move
+    board->bitboards[piece_type] &= ~(1ULL << to);
+    board->bitboards[piece_type] |= (1ULL << from);
+    if (captured_piece) {
+        for (int i = side; i < 12; i += 2) {
+            if (board->bitboards[i ^ 1] == 0) continue;
+            board->bitboards[i ^ 1] |= captured_piece;
+        }
+    }
+
+    return legal;
+}
+
+
 struct MoveList generate_legal_moves(struct Board* board) {
     struct MoveList legal_moves;
     legal_moves.count = 0;

@@ -1,0 +1,39 @@
+RESULTS:
+- Full copy of board to test legallity
+
+Standard Position:
+----------------------------
+PERFT(4) = 197281
+Captures: 1610
+En Passant: 0
+Castles: 0
+Promotions: 0
+Exe Time: 0.022 s 
+----------------------------
+----------------------------
+PERFT(5) = 4865609
+Captures: 84329
+En Passant: 258
+Castles: 0
+Promotions: 0
+Exe Time: 0.428 s 
+----------------------------
+----------------------------
+PERFT(6) = 119060324
+Captures: 2896337
+En Passant: 5506
+Castles: 0
+Promotions: 0
+Exe Time: 10.801 s 
+----------------------------
+----------------------------
+PERFT(7) = 3195901860
+Captures: 111226263
+En Passant: 325123
+Castles: 883453
+Promotions: 0
+Exe Time: 287.243 s 
+----------------------------
+
+
+

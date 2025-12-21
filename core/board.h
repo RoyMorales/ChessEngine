@@ -13,13 +13,13 @@
 #define EP_NONE   0xFF  // No en passant available
 
 
-// 104 Bytes total
+// 125 Bytes total
 struct Board {
   // Bitboards for each piece type
   uint64_t bitboards[12]; // 8 Bytes * 12 piece types = 96 Bytes 
-  uint64_t white_occupied; // 1 Byte
-  uint64_t black_occupied; // 1 Byte
-  uint64_t all_occupied; //  1 Byte
+  uint64_t white_occupied; // 8 Byte
+  uint64_t black_occupied; // 8 Byte
+  uint64_t all_occupied; //  8 Byte
 
   // ToDo! unite the castling rights with the en passant into a single byte
   unsigned char castling_rights; // 1 Byte
