@@ -49,7 +49,6 @@ bool is_square_attacked(struct Board* board, int square, bool by_white) {
 }
 
 
-
 int get_king_square(struct Board* board, bool player_colour) {
     uint64_t king_square = player_colour ? board->bitboards[white_king] : board->bitboards[black_king];
     if (!king_square) {
@@ -118,65 +117,91 @@ bool is_legal_move(struct Board* board, uint32_t move) {
 }
 
 
-// Doesnt work
-bool is_legal_move_fast(struct Board* board, uint32_t move) {
-    int from = move & 0x3F;
-    int to   = (move >> 6) & 0x3F;
+void generate_castling_moves(struct Board* board, struct MoveList* list) {
+    uint64_t occ = board->all_occupied;
 
-    //bool is_castle = (move >> MOVE_CASTLING) & 1;
-    //bool is_ep     = (move >> EN_PASSANT) & 1;
-    bool is_capture= (move >> CAPTURE) & 1;
+    if (board->player_turn == white_player) {
+        // King must be on E1
+        if (!(board->bitboards[white_king] & (1ULL << 4))) return;
 
-    int side = board->player_turn;
+        // White kingside castling: E1 -> G1
+        if (board->castling_rights & WHITE_KINGSIDE) {
+            bool empty_f1 = !(occ & (1ULL << 5));
+            bool empty_g1 = !(occ & (1ULL << 6));
+            if (empty_f1 && empty_g1) {
+                uint32_t move = 0;
+                move |= 4;                      // From square
+                move |=(6 << 6);               // To square
+                move |= (1 << MOVE_CASTLING);   // Castling flag
 
-    // Save only what's needed
-    uint64_t captured_piece = 0;
-    if (is_capture) {
-        for (int i = side; i < 12; i += 2) {
-            if (board->bitboards[i ^ 1] & (1ULL << to)) {
-                captured_piece = board->bitboards[i ^ 1] & (1ULL << to);
-                board->bitboards[i ^ 1] &= ~(1ULL << to);
-                break;
+                if (check_castling_legality(board, move)) {
+                    list->moves[list->count++] = move;
+                }
+            }
+        }
+
+        // White queenside castling: E1 -> C1
+        if (board->castling_rights & WHITE_QUEENSIDE) {
+            bool empty_d1 = !(occ & (1ULL << 3));
+            bool empty_c1 = !(occ & (1ULL << 2));
+            bool empty_b1 = !(occ & (1ULL << 1));
+            if (empty_d1 && empty_c1 && empty_b1) {
+                uint32_t move = 0;
+                move |= 4;                      // From square
+                move |= (2 << 6);               // To square
+                move |= (1 << MOVE_CASTLING);   // Castling flag
+
+                if (check_castling_legality(board, move)) {
+                    list->moves[list->count++] = move;
+                }
+            }
+        }
+
+    } else { // black
+        // King must be on E8
+        if (!(board->bitboards[black_king] & (1ULL << 60))) return;
+
+        // Black kingside castling: E8 -> G8
+        if (board->castling_rights & BLACK_KINGSIDE) {
+            bool empty_f8 = !(occ & (1ULL << 61));
+            bool empty_g8 = !(occ & (1ULL << 62));
+            if (empty_f8 && empty_g8) {
+                uint32_t move = 0;
+                move |= 60;                     // From square
+                move |= (62 << 6);              // To square
+                move |= (1 << MOVE_CASTLING);   // Castling flag
+
+                if (check_castling_legality(board, move)) {
+                    list->moves[list->count++] = move;
+                }
+            }
+        }
+
+        // Black queenside castling: E8 -> C8
+        if (board->castling_rights & BLACK_QUEENSIDE) {
+            bool empty_d8 = !(occ & (1ULL << 59));
+            bool empty_c8 = !(occ & (1ULL << 58));
+            bool empty_b8 = !(occ & (1ULL << 57));
+            if (empty_d8 && empty_c8 && empty_b8) {
+                uint32_t move = 0;
+                move |= 60;                     // From square
+                move |= (58 << 6);              // To square
+                move |= (1 << MOVE_CASTLING);   // Castling flag
+
+                if (check_castling_legality(board, move)) {
+                    list->moves[list->count++] = move;
+                }
             }
         }
     }
-
-    // Move the piece (temporarily)
-    int piece_type = -1;
-    for (int i = side; i < 12; i += 2) {
-        if (board->bitboards[i] & (1ULL << from)) {
-            piece_type = i;
-            board->bitboards[i] &= ~(1ULL << from);
-            board->bitboards[i] |= (1ULL << to);
-            break;
-        }
-    }
-
-    int king_sq = (piece_type == white_king || piece_type == black_king) ? to :
-                  get_king_square(board, side);
-
-    // Check if king is attacked
-    bool legal = !is_square_attacked(board, king_sq, !side);
-
-    // Undo move
-    board->bitboards[piece_type] &= ~(1ULL << to);
-    board->bitboards[piece_type] |= (1ULL << from);
-    if (captured_piece) {
-        for (int i = side; i < 12; i += 2) {
-            if (board->bitboards[i ^ 1] == 0) continue;
-            board->bitboards[i ^ 1] |= captured_piece;
-        }
-    }
-
-    return legal;
 }
-
 
 struct MoveList generate_legal_moves(struct Board* board) {
     struct MoveList legal_moves;
     legal_moves.count = 0;
 
     struct MoveList pseudo_moves = generate_board_moves(board);
+    generate_castling_moves(board, &pseudo_moves);
 
     for(int move_int = 0; move_int < pseudo_moves.count; move_int++) {
         if (is_legal_move(board, pseudo_moves.moves[move_int])) {
@@ -184,4 +209,11 @@ struct MoveList generate_legal_moves(struct Board* board) {
         }
     }
     return legal_moves;
+}
+
+
+struct MoveList engine_search_moves(struct Board* board) {
+    struct MoveList pseudo_moves = generate_board_moves(board);
+    generate_castling_moves(board, &pseudo_moves);
+    return pseudo_moves;
 }

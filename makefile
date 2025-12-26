@@ -5,8 +5,12 @@ CC := gcc
 # Source files
 # -------------------------
 
-# Engine core (shared)
+# Engine core
 ENGINE_SRC := \
+	engine/move_stack.c
+
+# Board core (shared)
+BOARD_SRC := \
 	core/core_util.c \
 	core/board.c \
 	core/attack.c \
@@ -30,12 +34,14 @@ PERFT_SRC := \
 # Object files
 # -------------------------
 ENGINE_OBJ := $(ENGINE_SRC:.c=.o)
+BOARD_OBJ := $(BOARD_SRC:.c=.o)
 GUI_OBJ    := $(GUI_SRC:.c=.o)
 PERFT_OBJ  := $(PERFT_SRC:.c=.o)
 
 # -------------------------
 # Targets
 # -------------------------
+ENGINE_TARGET := CodFish
 GUI_TARGET   := ChessGUI
 PERFT_TARGET := perft
 
@@ -53,18 +59,22 @@ LDFLAGS := -fopenmp $(LIBS)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 # Default target
-all: $(GUI_TARGET)
+all: $(ENGINE_TARGET)
+
+# Engine build
+$(ENGINE_TARGET): $(BOARD_OBJ) $(ENGINE_OBJ)
+	$(CC) $^ -o $@ $(LDFLAGS)
 
 # GUI build
-$(GUI_TARGET): $(ENGINE_OBJ) $(GUI_OBJ)
+$(GUI_TARGET): $(BOARD_OBJ) $(GUI_OBJ)
 	$(CC) $^ -o $@ $(LDFLAGS)
 
 # PERFT build (NO GUI, NO SDL)
-$(PERFT_TARGET): $(ENGINE_OBJ) $(PERFT_OBJ)
+$(PERFT_TARGET): $(BOARD_OBJ) $(PERFT_OBJ)
 	$(CC) $^ -o $@ $(LDFLAGS)
 
 clean:
-	rm -f $(ENGINE_OBJ) $(GUI_OBJ) $(PERFT_OBJ) $(GUI_TARGET) $(PERFT_TARGET)
+	rm -f $(BOARD_OBJ) $(GUI_OBJ) $(PERFT_OBJ) $(GUI_TARGET) $(PERFT_TARGET) $(ENGINE_TARGET)
 
 run: $(GUI_TARGET)
 	./run.sh
