@@ -12,6 +12,7 @@
 #include "core/attack.h"
 #include "core/move_apply.h"
 #include "core/move_filter.h"
+#include "core/board_history.h"
 
 #define FPS_UPDATE_INTERVAL 10
 #define TARGET_FPS 60
@@ -27,6 +28,7 @@ int main(void) {
 
   struct MoveList move_list;
   struct MoveList move_list_piece;
+  struct BoardHistory board_history;
 
   printf("\n----------------------------\n");
   printf("         Chess Engine      \n");
@@ -96,6 +98,7 @@ int main(void) {
   struct Board game_board = fen_to_bitboards(fen_setup);
   update_occupancy(&game_board);
   init_attack_tables();
+  history_init(&board_history);
 
   // Load GUI assets
   SDL_Event event;
@@ -113,6 +116,7 @@ int main(void) {
   board_state_ui.need_redraw = true;
   board_state_ui.selected_movable_piece = false;
   board_state_ui.piece_moved = false;
+  board_state_ui.undo_requested = false;
 
   // ToDO! Implement player choice
   char player = white_player;
@@ -142,7 +146,8 @@ int main(void) {
     // Event handling
     while (SDL_PollEvent(&event)) {
       main_switch_event(&event, &running, &move, &move_list, &move_list_piece,
-                        &board_state_ui, &render_context, &config, &side_data);
+                        &board_state_ui, &render_context, &config, &side_data,
+                        &game_board, &board_history);
       }
 
     // Redraw if needed
@@ -158,6 +163,7 @@ int main(void) {
     // Apply move if piece was moved
     if(board_state_ui.piece_moved) {
       printf("Selected Move: From %d to %d\n\n", move & 0x3F, (move >> 6) & 0x3F);
+      history_push(&board_history, &game_board, move);
       apply_move(&game_board, move);
       update_occupancy(&game_board);
 
@@ -169,6 +175,23 @@ int main(void) {
       side_data.opponent_pieces = (game_board.player_turn == white_player) ? game_board.black_occupied : game_board.white_occupied;
 
       board_state_ui.piece_moved = false;
+      board_state_ui.need_redraw = true;
+      generate_moves = true;
+    }
+
+    // Undo last move (board was already restored in the event handler)
+    if(board_state_ui.undo_requested) {
+      destroy_cached_pieces(&render_context.pieces_cache);
+      render_context.pieces_cache = init_cached_pieces(render_context.renderer, &textures, &game_board,
+                                                      config.window_height, config.window_width);
+
+      render_context.highlight_texture = create_highlight_texture(render_context.renderer, config.window_width, config.window_height, -1);
+      render_context.highlight_piece_texture = NULL;
+
+      side_data.player_pieces = (game_board.player_turn == white_player) ? game_board.white_occupied : game_board.black_occupied;
+      side_data.opponent_pieces = (game_board.player_turn == white_player) ? game_board.black_occupied : game_board.white_occupied;
+
+      board_state_ui.undo_requested = false;
       board_state_ui.need_redraw = true;
       generate_moves = true;
     }

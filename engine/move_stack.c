@@ -101,12 +101,12 @@ void push_move(struct Board* board, struct MoveInfo* move_info, uint32_t move) {
 
 
 void pull_move(struct Board* board, struct MoveInfo* move_info, uint32_t move) {
-    int from = move & 0x3F;
+    const uint32_t from = move & 0x3F;
     int to   = (move >> 6) & 0x3F;
 
     bool is_capture= (move >> CAPTURE) & 1;
     bool is_castle = (move >> MOVE_CASTLING) & 1;
-    bool is_ep     = (move >> EN_PASSANT) & 1;
+    //bool is_ep     = (move >> EN_PASSANT) & 1;
 
     int side = !board->player_turn;
 

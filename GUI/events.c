@@ -2,6 +2,7 @@
 
 #include "gui_board.h"
 #include "../core/core_util.h"
+#include "../core/board_history.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -50,7 +51,8 @@ uint32_t select_move_from_list(struct MoveList* moves_list, int board_index) {
 void main_switch_event(SDL_Event* event, bool* running, uint32_t *move,
                       struct MoveList* move_list, struct MoveList* move_list_piece, 
                       struct BoardStateUI* board_state_ui, struct RenderContext* render_context, 
-                      struct Config* config, struct SideData* side_data){
+                      struct Config* config, struct SideData* side_data,
+                      struct Board* board, struct BoardHistory* history){
 
   switch (event->type) {
     case SDL_EVENT_QUIT:
@@ -60,6 +62,22 @@ void main_switch_event(SDL_Event* event, bool* running, uint32_t *move,
     case SDL_EVENT_KEY_DOWN:  
       if (event->key.key == SDLK_ESCAPE) {
         *running = false;
+      }
+      if (event->key.key == SDLK_U) {
+        if (history_can_undo(history)) {
+          history_pop(history, board);
+          printf("Undo: restored previous position (%d moves in history)\n", history->size);
+
+          // Reset selection state
+          board_state_ui->selected_movable_piece = false;
+          board_state_ui->piece_moved = false;
+          board_state_ui->need_redraw = true;
+
+          // Signal main loop to regenerate moves and re-cache pieces
+          board_state_ui->undo_requested = true;
+        } else {
+          printf("Nothing to undo.\n");
+        }
       }
       break;
 

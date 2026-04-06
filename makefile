@@ -13,6 +13,7 @@ ENGINE_SRC := \
 BOARD_SRC := \
 	core/core_util.c \
 	core/board.c \
+	core/board_history.c \
 	core/attack.c \
 	core/move_gen.c \
 	core/move_filter.c \
@@ -81,4 +82,3 @@ run: $(GUI_TARGET)
 
 run-perft: $(PERFT_TARGET)
 	./perft
-
