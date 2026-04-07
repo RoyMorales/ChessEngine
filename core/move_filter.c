@@ -1,11 +1,7 @@
 // Filter legal moves from pseudo-moves
 
-// Creates a copy of the pseudo-legal list moves and filters the legal moves
-// Improve -> remove the copy to save memory
-
+#include <omp.h>
 #include "move_filter.h"
-
-#define TRACE printf("HERE %s:%d\n", __FILE__, __LINE__);
 
 
 // Unnecessary recalculation of all attackers
@@ -197,17 +193,29 @@ void generate_castling_moves(struct Board* board, struct MoveList* list) {
 }
 
 struct MoveList generate_legal_moves(struct Board* board) {
-    struct MoveList legal_moves;
-    legal_moves.count = 0;
-
     struct MoveList pseudo_moves = generate_board_moves(board);
     generate_castling_moves(board, &pseudo_moves);
 
-    for(int move_int = 0; move_int < pseudo_moves.count; move_int++) {
-        if (is_legal_move(board, pseudo_moves.moves[move_int])) {
-            legal_moves.moves[legal_moves.count++] = pseudo_moves.moves[move_int];
+    struct MoveList legal_moves;
+    legal_moves.count = 0;
+
+    // Each legality check is fully independent: is_legal_move works on a
+    // private board copy internally, so parallel execution is safe.
+    // Collect results into a flag array first to keep move order deterministic.
+    int n = pseudo_moves.count;
+    bool legal[MAX_MOVES] = {false};
+
+    #pragma omp parallel for schedule(dynamic, 4)
+    for (int i = 0; i < n; i++) {
+        legal[i] = is_legal_move(board, pseudo_moves.moves[i]);
+    }
+
+    for (int i = 0; i < n; i++) {
+        if (legal[i]) {
+            legal_moves.moves[legal_moves.count++] = pseudo_moves.moves[i];
         }
     }
+
     return legal_moves;
 }
 
