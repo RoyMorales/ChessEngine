@@ -2,6 +2,7 @@
 
 #include "util.h"
 #include "../core/core_util.h"
+#include <omp.h>
 #include <time.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -55,8 +56,47 @@ void perft_count(struct Board* board, int depth, struct PerftStats* stats) {
 }
 
 
-// Divide perft: print node count per root move, then total.
-// Invaluable for comparing against Stockfish to isolate bugs.
+// Parallel perft: split root moves across threads, each with its own board copy.
+// Threads never share mutable state so no locks needed. Scales with core count.
+struct PerftStats perft_parallel(struct Board* root, int depth) {
+    struct MoveList moves = generate_legal_moves(root);
+    int n = moves.count;
+
+    // Per-move stats array — one slot per root move, no contention
+    struct PerftStats thread_stats[256] = {0};
+
+    #pragma omp parallel for schedule(dynamic, 1)
+    for (int i = 0; i < n; i++) {
+        uint32_t move = moves.moves[i];
+
+        if (depth == 1) {
+            thread_stats[i].nodes++;
+            if ((move >> CAPTURE) & 0x1)      thread_stats[i].captures++;
+            if ((move >> EN_PASSANT) & 0x1)    thread_stats[i].ep++;
+            if ((move >> MOVE_CASTLING) & 0x1) thread_stats[i].castles++;
+            if (((move >> 12) & 0xF) != 0)     thread_stats[i].promotions++;
+            continue;
+        }
+
+        struct Board board_copy = *root;  // Private copy — no sharing
+        apply_move(&board_copy, move);
+        perft_count(&board_copy, depth - 1, &thread_stats[i]);
+    }
+
+    // Merge results
+    struct PerftStats total = {0};
+    for (int i = 0; i < n; i++) {
+        total.nodes      += thread_stats[i].nodes;
+        total.captures   += thread_stats[i].captures;
+        total.ep         += thread_stats[i].ep;
+        total.castles    += thread_stats[i].castles;
+        total.promotions += thread_stats[i].promotions;
+    }
+    return total;
+}
+
+
+// Divide perft: print node count per root move — use to compare against Stockfish
 void perft_divide(struct Board* board, int depth) {
     struct MoveList moves = generate_legal_moves(board);
     uint64_t total = 0;
@@ -107,8 +147,9 @@ int main(int argc, char** argv) {
     char fen_setup[256] = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
     int depth = 5;
-    int do_divide = 0;
-    int do_verify = 0;
+    int do_divide  = 0;
+    int do_verify  = 0;
+    int do_parallel = 1;  // parallel by default
 
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "-d") == 0 && i + 1 < argc) {
@@ -119,6 +160,8 @@ int main(int argc, char** argv) {
             do_verify = 1;
         } else if (strcmp(argv[i], "--fen") == 0 && i + 1 < argc) {
             strncpy(fen_setup, argv[++i], sizeof(fen_setup) - 1);
+        } else if (strcmp(argv[i], "--single") == 0) {
+            do_parallel = 0;
         } else {
             int n = atoi(argv[i]);
             if (n > 0) depth = n;
@@ -129,7 +172,8 @@ int main(int argc, char** argv) {
     update_occupancy(&board);
     init_attack_tables();
 
-    printf("Depth: %d\n", depth);
+    printf("Depth:   %d\n", depth);
+    printf("Threads: %d\n", do_parallel ? omp_get_max_threads() : 1);
     printf("----------------------------\n");
 
     if (do_divide) {
@@ -137,12 +181,17 @@ int main(int argc, char** argv) {
         return 0;
     }
 
-    struct PerftStats stats = {0};
-    clock_t start = clock();
-    perft_count(&board, depth, &stats);
-    clock_t end = clock();
+    double start = omp_get_wtime();
 
-    double exe_time = (double)(end - start) / CLOCKS_PER_SEC;
+    struct PerftStats stats;
+    if (do_parallel) {
+        stats = perft_parallel(&board, depth);
+    } else {
+        stats = (struct PerftStats){0};
+        perft_count(&board, depth, &stats);
+    }
+
+    double exe_time = omp_get_wtime() - start;
     double mnps = (exe_time > 0) ? (stats.nodes / 1e6) / exe_time : 0.0;
 
     printf("PERFT(%d)    = %lu\n", depth, stats.nodes);
