@@ -2,7 +2,6 @@
 
 #include "gui_board.h"
 #include "../core/core_util.h"
-#include "../core/board_history.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -19,6 +18,27 @@ void mouse_click_to_board_pos(float mouse_x, float mouse_y, int window_width, in
     *board_y = 0;
   } else if (*board_y > 7) {
     *board_y = 7; 
+  }
+}
+
+void mouse_click_menu(float mouse_x, float mouse_y, struct Config* config, bool* one_player_selected, bool* two_player_selected, bool* exit_requested) {  
+  if(mouse_x >= config->window_width / 8 * 2.5f && mouse_x <= config->window_width / 8 * 5.5f) {
+    if(mouse_y >= config->window_height / 8 * 1.5f && mouse_y <= config->window_height / 8 * 3.0f) {
+      *one_player_selected = true;
+      printf("----------------------------\n");
+      printf("One Player Selected.\n");
+      printf("----------------------------\n");
+    } else if(mouse_y >= config->window_height / 8 * 3.5f && mouse_y <= config->window_height / 8 * 5.0f) {
+      *two_player_selected = true;
+      printf("----------------------------\n");
+      printf("Two Player Selected.\n");
+      printf("----------------------------\n");
+    } else if(mouse_y >= config->window_height / 8 * 5.5f && mouse_y <= config->window_height / 8 * 6.5f) {
+      *exit_requested = true;
+      printf("----------------------------\n");
+      printf("Exit requested.\n");
+      printf("----------------------------\n");
+    } 
   }
 }
 
@@ -46,6 +66,23 @@ uint32_t select_move_from_list(struct MoveList* moves_list, int board_index) {
   }
   return 0; // Return 0 if no move found
 }
+
+void player_menu_event(SDL_Event* event, bool* one_player_selected, bool* two_player_selected, bool* exit_requested, struct Config* config) {
+  switch (event->type) {
+      case SDL_EVENT_MOUSE_BUTTON_DOWN:
+        mouse_click_menu(event->button.x, event->button.y, config, one_player_selected, two_player_selected, exit_requested); 
+        break;
+      case SDL_EVENT_QUIT:
+        exit(0);
+      case SDL_EVENT_KEY_DOWN:
+        if (event->key.key == SDLK_ESCAPE) {
+          exit(0);
+        }
+      default:
+        break;
+    }
+}
+
 
 
 void main_switch_event(SDL_Event* event, bool* running, uint32_t *move,

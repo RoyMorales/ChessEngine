@@ -7,7 +7,7 @@ CC := gcc
 
 # Engine core
 ENGINE_SRC := \
-	engine/move_stack.c
+	engine/move_stack.c 
 
 # Board core (shared)
 BOARD_SRC := \
@@ -17,13 +17,15 @@ BOARD_SRC := \
 	core/attack.c \
 	core/move_gen.c \
 	core/move_filter.c \
-	core/move_apply.c 	
+	core/move_apply.c \
+	core/zobrist.c	
 
 # GUI-specific
 GUI_SRC := \
 	main.c \
 	GUI/chessboard.c \
 	GUI/events.c \
+	GUI/menu.c \
 	util/fps_counter.c \
 	util/config_reader.c
 
@@ -48,7 +50,7 @@ PERFT_TARGET := perft
 
 # Includes / libs
 INCLUDES := -I/usr/local/include/SDL3 -I/usr/local/include/SDL3_image
-LIBS := -L/usr/local/lib -lSDL3_image -lSDL3
+LIBS := -L/usr/local/lib -lSDL3_image -lSDL3 -lSDL3_ttf
 
 CFLAGS := -Wall -Wextra -O3 -fopenmp $(INCLUDES)
 LDFLAGS := -fopenmp $(LIBS)
@@ -60,7 +62,7 @@ LDFLAGS := -fopenmp $(LIBS)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 # Default target
-all: $(ENGINE_TARGET)
+all: $(ENGINE_TARGET) $(GUI_TARGET) $(PERFT_TARGET)
 
 # Engine build
 $(ENGINE_TARGET): $(BOARD_OBJ) $(ENGINE_OBJ)

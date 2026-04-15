@@ -37,7 +37,7 @@ struct Board fen_to_bitboards(char fen_string[]) {
   char* token = strtok(fen_string, " ");
   int part = 0;
 
-  printf("\n----------------------------\n");
+  printf("----------------------------\n");
   while(token != NULL) {
 
     if (part == 0) {
@@ -129,7 +129,7 @@ struct Board fen_to_bitboards(char fen_string[]) {
     part ++;
     token = strtok(NULL, " ");
   }
-  printf("----------------------------\n\n");
+  printf("----------------------------\n");
   return board;
 }
 

@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <SDL3/SDL.h>
+#include <SDL3_ttf/SDL_ttf.h>
 
 #include "util/util.h"
 #include "GUI/gui_board.h"
@@ -80,33 +81,32 @@ int main(void) {
   printf("----------------------------\n");
 
   // Initialize game board from FEN
-  //    Normal Setup
+  // Normal Setup
   char fen_setup[] = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-  //char fen_setup[] = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - ";
-  
-
-  //char fen_setup[] = "r1bk3r/p2pBpNp/n4n2/1p1NP2P/6P1/3P4/P1P1K3/q5b1 w KQkq - 0 1";
-  //char fen_setup[] = "8/8/8/3N4/8/8/8/7N w KQkq - 0 1";
-
-  //    To Test Castle rights
-  //char fen_setup[] = "r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1";
-
-  //    To Test Legal Move Generation
-  //char fen_setup[] = "3K3R/8/8/5q2/bb6/6N1/8/3rk3 w KQkq - 0 1";
-  //char fen_setup[] = "3K3R/8/8/5q2/bb6/8/8/3rk3 w KQkq - 0 1";
-
   struct Board game_board = fen_to_bitboards(fen_setup);
   update_occupancy(&game_board);
   init_attack_tables();
   history_init(&board_history);
 
   // Load GUI assets
+  TTF_Init();
   SDL_Event event;
+  
   struct ChessTextures textures = load_pieces_textures(render_context.renderer);
   render_context.board_texture = create_chessboard_texture(render_context.renderer, config.window_width, config.window_height);
   render_context.highlight_texture = create_highlight_texture(render_context.renderer, config.window_width, config.window_height, -1);
   render_context.highlight_piece_texture = NULL;
   render_context.pieces_cache = init_cached_pieces(render_context.renderer, &textures, &game_board, config.window_width, config.window_height);
+  
+  TTF_Font* small_font = load_ttf_font(8);
+  if (!small_font) {
+    printf("Font load error: %s\n", SDL_GetError());
+  }
+  TTF_Font* large_font = load_ttf_font(36);
+  if (!large_font) {
+    printf("Font load error: %s\n", SDL_GetError());
+  }
+  SDL_Texture* menu_texture = create_menu_texture(render_context.renderer, large_font, &config);
 
   // FPS management variables
   uint64_t frame_start, frame_end, frame_time;
@@ -126,11 +126,31 @@ int main(void) {
   side_data.player_pieces = player_pieces;
   side_data.opponent_pieces = opponent_pieces;
 
+  //  Player Menu
+  bool one_player_selected = false;
+  bool two_player_selected = false;
+  bool exit_requested = false;
+  // Menu loop
+  while (!one_player_selected && !two_player_selected && !exit_requested) {
+    SDL_Event event;
+    while (SDL_PollEvent(&event)) {
+        player_menu_event(&event, &one_player_selected, &two_player_selected, &exit_requested, &config);
+    }
+    SDL_SetRenderDrawColor(render_context.renderer, 0, 0, 0, 255);
+    SDL_RenderClear(render_context.renderer);
+    SDL_RenderTexture(render_context.renderer, render_context.board_texture, NULL, NULL);
+    SDL_RenderTexture(render_context.renderer, render_context.pieces_cache.texture, NULL, NULL);
+    SDL_RenderTexture(render_context.renderer, menu_texture, NULL, NULL);
+    SDL_RenderPresent(render_context.renderer);
+
+    SDL_Delay(16);
+  }
+
+  // Main game loop
   bool running = true;
   bool generate_moves = true;
   uint32_t move = 0;
-
-  while (running) {
+  while (running && !exit_requested) {
     frame_start = SDL_GetTicks();
 
     // Generate moves if needed
@@ -209,6 +229,7 @@ int main(void) {
   SDL_DestroyTexture(render_context.board_texture);
   SDL_DestroyRenderer(render_context.renderer);
   SDL_DestroyWindow(window);
+  TTF_Quit();
   SDL_Quit();
 
   return 0;

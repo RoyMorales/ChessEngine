@@ -13,22 +13,24 @@
 #define EP_NONE   0xFF  // No en passant available
 
 
-// 125 Bytes total
+// 125 Bytes total -> 128 Bytes aligned (cache line size)
 struct Board {
   // Bitboards for each piece type
   uint64_t bitboards[12]; // 8 Bytes * 12 piece types = 96 Bytes 
-  uint64_t white_occupied; // 8 Byte
-  uint64_t black_occupied; // 8 Byte
-  uint64_t all_occupied; //  8 Byte
+  uint64_t white_occupied; // 8 Byte -> Change
+  uint64_t black_occupied; // 8 Byte -> Change
+  uint64_t all_occupied; //  8 Byte  -> Change 
 
   // ToDo! unite the castling rights with the en passant into a single byte
-  unsigned char castling_rights; // 1 Byte
-  unsigned char en_passant_square; // 1 Byte
+  unsigned char castling_rights; // 1 Byte -> 4bits for castling rights, 4bits unused
+  unsigned char en_passant_square; // 1 Byte -> 0-63 for valid squares, 0xFF for no en passant
 
   // Turn info
   bool player_turn; // 1 Byte
   unsigned char half_turn; // 1 Byte
   unsigned char counter_turn; // 1 Byte
+
+  // Add board hash here for faster repetition detection and transposition table lookups
 };
 
 // Player colors

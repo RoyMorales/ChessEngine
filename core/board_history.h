@@ -6,14 +6,23 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include "board.h"
+#include "zobrist.h"
 
 #define MAX_HISTORY 1024  // Enough for any real game + engine search depth
 
+// DO NOT USE: QUADRATIC TIME COMPLEXITY for repetition detection. Only for testing and demonstration purposes.
+//struct BoardHistory {
+//    struct Board boards[MAX_HISTORY];
+//    uint32_t     moves[MAX_HISTORY];   // The move that led to boards[i+1]
+//    int          size;                 // Number of entries currently in the stack
+//};
+
+// OPTIMAL SOLUTION: Use a hash table to store position hashes and their counts.
 struct BoardHistory {
     struct Board boards[MAX_HISTORY];
-    uint32_t     moves[MAX_HISTORY];   // The move that led to boards[i+1]
+    uint32_t     hashes[MAX_HISTORY];   // The hash of each board position
     int          size;                 // Number of entries currently in the stack
-};
+}; 
 
 // Initialise an empty history
 void history_init(struct BoardHistory* history);

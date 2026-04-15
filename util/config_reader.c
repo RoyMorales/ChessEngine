@@ -16,17 +16,17 @@ int config_reader(const char* filename, struct Config* config) {
     char line[256];
     while (fgets(line, sizeof(line), file)) {
         char key[50];
-        int value;
-        if (sscanf(line, "%49[^=]=%d", key, &value) == 2) {
+        float value;
+        if (sscanf(line, "%49[^=]=%f", key, &value) == 2) {
             if (strcmp(key, "window_width") == 0) {
                 config->window_width = value;
-                printf("Width set to %d\n", value);
+                printf("Width set to %f\n", value);
             } else if (strcmp(key, "window_height") == 0) {
                 config->window_height = value;
-                printf("Height set to %d\n", value);
+                printf("Height set to %f\n", value);
             } else if (strcmp(key, "fullscreen") == 0) {
                 config->fullscreen = value;
-                printf("Fullscreen set to %d\n", value);
+                printf("Fullscreen set to %f\n", value);
             }
         }
     }
