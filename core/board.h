@@ -30,7 +30,8 @@ struct Board {
   unsigned char half_turn; // 1 Byte
   unsigned char counter_turn; // 1 Byte
 
-  // Add board hash here for faster repetition detection and transposition table lookups
+  // Bboard hash here for faster repetition detection and transposition table lookups
+  uint64_t board_hash; // 8 Bytes
 };
 
 // Player colors

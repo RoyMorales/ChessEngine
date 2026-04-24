@@ -209,6 +209,7 @@ int main(void) {
     }
 
     if(board_state_ui.piece_moved && one_player_selected) {
+      // --- Human move ---
       printf("Selected Move: From %d to %d\n\n", move & 0x3F, (move >> 6) & 0x3F);
       history_push(&board_history, &game_board, move);
       apply_move(&game_board, move);
@@ -216,34 +217,43 @@ int main(void) {
 
       destroy_cached_pieces(&render_context.pieces_cache);
       render_context.pieces_cache = init_cached_pieces(render_context.renderer, &textures, &game_board,
-                                                      config.window_height, config.window_width);
+                                                      config.window_width, config.window_height);
+      // Render human move immediately so the board updates before AI thinks
+      SDL_RenderTexture(render_context.renderer, render_context.board_texture, NULL, NULL);
+      SDL_RenderTexture(render_context.renderer, render_context.pieces_cache.texture, NULL, NULL);
+      SDL_RenderPresent(render_context.renderer);
 
-      side_data.player_pieces = (game_board.player_turn == white_player) ? game_board.white_occupied : game_board.black_occupied;
-      side_data.opponent_pieces = (game_board.player_turn == white_player) ? game_board.black_occupied : game_board.white_occupied;
+      // Check if human move gave opponent no legal moves (checkmate/stalemate)
+      struct MoveList after_human = generate_legal_moves(&game_board);
+      if (after_human.count == 0) {
+        board_state_ui.piece_moved = false;
+        board_state_ui.need_redraw = true;
+        generate_moves = true;
+        side_data.player_pieces   = 0;
+        side_data.opponent_pieces = 0;
+        goto skip_ai;
+      }
 
-      move_list = generate_board_moves(&game_board);
-      printf("----------------------------\n");
-      printf("Generated %d moves for player %s\n", move_list.count, (game_board.player_turn == white_player) ? "White" : "Black");
-      printf("----------------------------\n");
-      print_move_list(&move_list);
-      
-      uint32_t ai_move = find_best_move(&game_board, 3); // ToDo! Make depth configurable
-      printf("AI Move: From %d to %d\n\n", ai_move & 0x3F, (ai_move >> 6) & 0x3F);
-      history_push(&board_history, &game_board, ai_move);
-      apply_move(&game_board, ai_move);
-      update_occupancy(&game_board);
+      // --- AI move ---
+      uint32_t ai_move = find_best_move(&game_board, 4);
+      if (ai_move) {
+        printf("AI Move: From %d to %d\n\n", ai_move & 0x3F, (ai_move >> 6) & 0x3F);
+        history_push(&board_history, &game_board, ai_move);
+        apply_move(&game_board, ai_move);
+        update_occupancy(&game_board);
 
-      destroy_cached_pieces(&render_context.pieces_cache);
-      render_context.pieces_cache = init_cached_pieces(render_context.renderer, &textures, &game_board,
-                                                      config.window_height, config.window_width);
+        destroy_cached_pieces(&render_context.pieces_cache);
+        render_context.pieces_cache = init_cached_pieces(render_context.renderer, &textures, &game_board,
+                                                        config.window_width, config.window_height);
+      }
 
-      side_data.player_pieces = (game_board.player_turn == white_player) ? game_board.white_occupied : game_board.black_occupied;
-      side_data.opponent_pieces = (game_board.player_turn == white_player) ? game_board.black_occupied : game_board.white_occupied;
-
+      side_data.player_pieces   = game_board.white_occupied;
+      side_data.opponent_pieces = game_board.black_occupied;
       board_state_ui.piece_moved = false;
       board_state_ui.need_redraw = true;
       generate_moves = true;
     }
+    skip_ai:;
 
     // Undo last move (board was already restored in the event handler)
     if(board_state_ui.undo_requested) {
