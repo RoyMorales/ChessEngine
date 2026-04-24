@@ -7,7 +7,8 @@ CC := gcc
 
 # Engine core
 ENGINE_SRC := \
-	engine/move_stack.c 
+	engine/move_stack.c \
+	engine/eval.c 
 
 # Board core (shared)
 BOARD_SRC := \
@@ -27,7 +28,8 @@ GUI_SRC := \
 	GUI/events.c \
 	GUI/menu.c \
 	util/fps_counter.c \
-	util/config_reader.c
+	util/config_reader.c \
+	engine/eval.c
 
 # PERFT-specific
 PERFT_SRC := \

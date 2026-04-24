@@ -1,0 +1,4 @@
+ToDO!
+
+1) Move list_move to the board struct
+2) Create a hash identifier for each board state

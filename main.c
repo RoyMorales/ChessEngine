@@ -5,6 +5,8 @@
 #include <SDL3/SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>
 
+#include "engine/eval.h"
+
 #include "util/util.h"
 #include "GUI/gui_board.h"
 #include "core/core_util.h"
@@ -188,10 +190,47 @@ int main(void) {
     }
 
     // Apply move if piece was moved
-    if(board_state_ui.piece_moved) {
+    if(board_state_ui.piece_moved && two_player_selected) {
       printf("Selected Move: From %d to %d\n\n", move & 0x3F, (move >> 6) & 0x3F);
       history_push(&board_history, &game_board, move);
       apply_move(&game_board, move);
+      update_occupancy(&game_board);
+
+      destroy_cached_pieces(&render_context.pieces_cache);
+      render_context.pieces_cache = init_cached_pieces(render_context.renderer, &textures, &game_board,
+                                                      config.window_height, config.window_width);
+
+      side_data.player_pieces = (game_board.player_turn == white_player) ? game_board.white_occupied : game_board.black_occupied;
+      side_data.opponent_pieces = (game_board.player_turn == white_player) ? game_board.black_occupied : game_board.white_occupied;
+
+      board_state_ui.piece_moved = false;
+      board_state_ui.need_redraw = true;
+      generate_moves = true;
+    }
+
+    if(board_state_ui.piece_moved && one_player_selected) {
+      printf("Selected Move: From %d to %d\n\n", move & 0x3F, (move >> 6) & 0x3F);
+      history_push(&board_history, &game_board, move);
+      apply_move(&game_board, move);
+      update_occupancy(&game_board);
+
+      destroy_cached_pieces(&render_context.pieces_cache);
+      render_context.pieces_cache = init_cached_pieces(render_context.renderer, &textures, &game_board,
+                                                      config.window_height, config.window_width);
+
+      side_data.player_pieces = (game_board.player_turn == white_player) ? game_board.white_occupied : game_board.black_occupied;
+      side_data.opponent_pieces = (game_board.player_turn == white_player) ? game_board.black_occupied : game_board.white_occupied;
+
+      move_list = generate_board_moves(&game_board);
+      printf("----------------------------\n");
+      printf("Generated %d moves for player %s\n", move_list.count, (game_board.player_turn == white_player) ? "White" : "Black");
+      printf("----------------------------\n");
+      print_move_list(&move_list);
+      
+      uint32_t ai_move = find_best_move(&game_board, 3); // ToDo! Make depth configurable
+      printf("AI Move: From %d to %d\n\n", ai_move & 0x3F, (ai_move >> 6) & 0x3F);
+      history_push(&board_history, &game_board, ai_move);
+      apply_move(&game_board, ai_move);
       update_occupancy(&game_board);
 
       destroy_cached_pieces(&render_context.pieces_cache);
