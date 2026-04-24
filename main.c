@@ -35,18 +35,21 @@ int main(void) {
   printf("         Chess Engine      \n");
   printf("----------------------------\n");
 
+  // Load configuration
   if (config_reader("settings.cfg", &config) != 0) {
     fprintf(stderr, "Failed to read config file\n");
     SDL_Quit();
     return 1;
   }
 
+  // Initialize SDL
   if (!SDL_Init(SDL_INIT_VIDEO)) {
     fprintf(stderr, "SDL_Init failed: %s\n", SDL_GetError());
     SDL_Quit();
     return 2;
   }
 
+  // Create window and renderer
   SDL_Window *window = SDL_CreateWindow("SDL3 Test",
                                         config.window_height,
                                         config.window_height,
@@ -56,17 +59,15 @@ int main(void) {
     SDL_Quit();
     return 3;
   }
-
   SDL_PropertiesID renderer_props = SDL_CreateProperties();
   SDL_SetPointerProperty(renderer_props, SDL_PROP_RENDERER_CREATE_WINDOW_POINTER, window);
   SDL_SetNumberProperty(renderer_props, SDL_PROP_RENDERER_CREATE_PRESENT_VSYNC_NUMBER, 1);
   SDL_SetStringProperty(renderer_props, SDL_PROP_RENDERER_CREATE_NAME_STRING, "opengl");
 
+  // Create renderer with properties
   render_context.renderer = SDL_CreateRendererWithProperties(renderer_props);
   printf("Renderer backend: %s\n", SDL_GetRendererName(render_context.renderer));
-
   SDL_DestroyProperties(renderer_props);
-
   if (!render_context.renderer) {
     fprintf(stderr, "SDL_CreateRendererWithProperties failed: %s\n", SDL_GetError());
     SDL_DestroyWindow(window);
@@ -74,10 +75,10 @@ int main(void) {
     return 4;
   }
 
+  // Check if VSync is enabled
   SDL_PropertiesID rprops = SDL_GetRendererProperties(render_context.renderer);
   bool vsync_enabled = SDL_GetNumberProperty(rprops, SDL_PROP_RENDERER_CREATE_PRESENT_VSYNC_NUMBER, 0);
   printf("VSync enabled: %s\n", vsync_enabled ? "true" : "false");
-
   printf("----------------------------\n");
 
   // Initialize game board from FEN
@@ -90,8 +91,7 @@ int main(void) {
 
   // Load GUI assets
   TTF_Init();
-  SDL_Event event;
-  
+  SDL_Event event; 
   struct ChessTextures textures = load_pieces_textures(render_context.renderer);
   render_context.board_texture = create_chessboard_texture(render_context.renderer, config.window_width, config.window_height);
   render_context.highlight_texture = create_highlight_texture(render_context.renderer, config.window_width, config.window_height, -1);
@@ -107,6 +107,7 @@ int main(void) {
     printf("Font load error: %s\n", SDL_GetError());
   }
   SDL_Texture* menu_texture = create_menu_texture(render_context.renderer, large_font, &config);
+  SDL_Texture* letter_number_texture = create_letter_number_texture(render_context.renderer, small_font, config.window_width, config.window_height);
 
   // FPS management variables
   uint64_t frame_start, frame_end, frame_time;
@@ -130,9 +131,8 @@ int main(void) {
   bool one_player_selected = false;
   bool two_player_selected = false;
   bool exit_requested = false;
-  // Menu loop
   while (!one_player_selected && !two_player_selected && !exit_requested) {
-    SDL_Event event;
+    frame_start = SDL_GetTicks();
     while (SDL_PollEvent(&event)) {
         player_menu_event(&event, &one_player_selected, &two_player_selected, &exit_requested, &config);
     }
@@ -141,9 +141,15 @@ int main(void) {
     SDL_RenderTexture(render_context.renderer, render_context.board_texture, NULL, NULL);
     SDL_RenderTexture(render_context.renderer, render_context.pieces_cache.texture, NULL, NULL);
     SDL_RenderTexture(render_context.renderer, menu_texture, NULL, NULL);
+    SDL_RenderTexture(render_context.renderer, letter_number_texture, NULL, NULL);
     SDL_RenderPresent(render_context.renderer);
 
-    SDL_Delay(16);
+    // Frame timing to cap FPS
+    frame_end = SDL_GetTicks();
+    frame_time = frame_end - frame_start;
+    if (frame_time < FRAME_TIME_MS) {
+      SDL_Delay(FRAME_TIME_MS - frame_time); // Cap FPS
+    }
   }
 
   // Main game loop
@@ -176,6 +182,7 @@ int main(void) {
       SDL_RenderTexture(render_context.renderer, render_context.highlight_texture, NULL, NULL);
       SDL_RenderTexture(render_context.renderer, render_context.highlight_piece_texture, NULL, NULL);
       SDL_RenderTexture(render_context.renderer, render_context.pieces_cache.texture, NULL, NULL);
+      SDL_RenderTexture(render_context.renderer, letter_number_texture, NULL, NULL);
       SDL_RenderPresent(render_context.renderer);
       board_state_ui.need_redraw = false;
     }
@@ -216,17 +223,24 @@ int main(void) {
       generate_moves = true;
     }
 
+    // Frame timing to cap FPS
     frame_end = SDL_GetTicks();
     frame_time = frame_end - frame_start;
     if (frame_time < FRAME_TIME_MS) {
       SDL_Delay(FRAME_TIME_MS - frame_time); // Cap FPS
     }
-    //fps_update_terminal(&fps_counter, FPS_UPDATE_INTERVAL);
   }
 
   destroy_pieces_textures(&textures);
   destroy_cached_pieces(&render_context.pieces_cache);
   SDL_DestroyTexture(render_context.board_texture);
+  SDL_DestroyTexture(render_context.highlight_texture);
+  if (render_context.highlight_piece_texture) {
+    SDL_DestroyTexture(render_context.highlight_piece_texture);
+  }
+  SDL_DestroyTexture(menu_texture);
+  free_font(small_font);
+  free_font(large_font);
   SDL_DestroyRenderer(render_context.renderer);
   SDL_DestroyWindow(window);
   TTF_Quit();

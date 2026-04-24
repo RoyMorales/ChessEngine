@@ -103,5 +103,11 @@ TTF_Font* load_ttf_font(int font_size) {
     return font;
 }
 
+void free_font(TTF_Font* font) {
+    if (font) {
+        TTF_CloseFont(font);
+    }
+}
+
 
 

@@ -104,6 +104,90 @@ SDL_Texture* create_piece_highlight_texture(SDL_Renderer* renderer, int board_wi
   SDL_SetRenderTarget(renderer, NULL);
   return highlight_texture;
 }
+void draw_board_letter_number(SDL_Renderer* renderer, TTF_Font* font, int width, int height) {
+    const char* letters = "abcdefgh";
+    const char* numbers = "12345678";
+
+    SDL_Color color = {0, 0, 0, 255};
+
+    for (int i = 0; i < 8; i++) {
+        char letter_str[2] = { letters[i], '\0' };
+        char number_str[2] = { numbers[7 - i], '\0' };
+
+        // --- Letters ---
+        SDL_Surface* letter_surface =
+            TTF_RenderText_Blended(font, letter_str, 1, color);
+        if (!letter_surface) continue;
+
+        SDL_Texture* letter_texture =
+            SDL_CreateTextureFromSurface(renderer, letter_surface);
+        if (!letter_texture) {
+            SDL_DestroySurface(letter_surface);
+            continue;
+        }
+
+        SDL_FRect letter_rect = {
+            (float)(i * (width / 8) + 65),
+            (float)(height - 10),
+            (float)letter_surface->w,
+            (float)letter_surface->h
+        };
+
+        SDL_RenderTexture(renderer, letter_texture, NULL, &letter_rect);
+
+        SDL_DestroyTexture(letter_texture);
+        SDL_DestroySurface(letter_surface);
+
+        // --- Numbers ---
+        SDL_Surface* number_surface =
+            TTF_RenderText_Blended(font, number_str, 1, color);
+        if (!number_surface) continue;
+
+        SDL_Texture* number_texture =
+            SDL_CreateTextureFromSurface(renderer, number_surface);
+        if (!number_texture) {
+            SDL_DestroySurface(number_surface);
+            continue;
+        }
+
+        SDL_FRect number_rect = {
+            5.0f,
+            (float)(i * (height / 8) + 5),
+            (float)number_surface->w,
+            (float)number_surface->h
+        };
+
+        SDL_RenderTexture(renderer, number_texture, NULL, &number_rect);
+
+        SDL_DestroyTexture(number_texture);
+        SDL_DestroySurface(number_surface);
+    }
+}
+
+
+SDL_Texture* create_letter_number_texture(SDL_Renderer* renderer, TTF_Font* font, int width, int height) {
+    SDL_Texture* texture = SDL_CreateTexture(
+        renderer,
+        SDL_PIXELFORMAT_RGBA8888,
+        SDL_TEXTUREACCESS_TARGET,
+        width,
+        height
+    );
+
+    if (!texture) return NULL;
+
+    SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_BLEND);
+
+    SDL_SetRenderTarget(renderer, texture);
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
+    SDL_RenderClear(renderer);
+
+    draw_board_letter_number(renderer, font, width, height);
+
+    SDL_SetRenderTarget(renderer, NULL);
+
+    return texture;
+}
 
 // ToDO! Move texture path to config file
 struct ChessTextures load_pieces_textures(SDL_Renderer* renderer) {

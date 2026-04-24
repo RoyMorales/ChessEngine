@@ -52,6 +52,7 @@ struct SideData {
 SDL_Texture* create_chessboard_texture(struct SDL_Renderer* renderer, int board_width, int board_height);
 SDL_Texture* create_highlight_texture(struct SDL_Renderer* renderer, int board_width, int board_height, int square);
 SDL_Texture* create_piece_highlight_texture(struct SDL_Renderer* renderer, int board_width, int board_height, struct MoveList* piece_moves);
+SDL_Texture* create_letter_number_texture(struct SDL_Renderer* renderer, TTF_Font* font, int width, int height);
 
 struct ChessTextures load_pieces_textures(struct SDL_Renderer* renderer);
 void destroy_pieces_textures(struct ChessTextures* textures);
@@ -83,5 +84,5 @@ void fast_update_piece_cache(struct RenderContext* render_context,
 // Menu related functions
 SDL_Texture* create_menu_texture(struct SDL_Renderer* renderer, TTF_Font* font, struct Config* config);
 void draw_menu(SDL_Renderer* renderer, TTF_Font* font, struct Config* config);
-
+void free_font(TTF_Font* font);
 #endif
