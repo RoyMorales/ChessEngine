@@ -109,6 +109,7 @@ int main(void) {
     printf("Font load error: %s\n", SDL_GetError());
   }
   SDL_Texture* menu_texture = create_menu_texture(render_context.renderer, large_font, &config);
+  SDL_Texture* player_color_menu_texture = create_player_color_menu_texture(render_context.renderer, large_font, &config);
   SDL_Texture* letter_number_texture = create_letter_number_texture(render_context.renderer, small_font, config.window_width, config.window_height);
 
   // FPS management variables
@@ -122,6 +123,7 @@ int main(void) {
   board_state_ui.undo_requested = false;
 
   // ToDO! Implement player choice
+  bool player_choice_made = false;
   char player = white_player;
   char opponent = (player == white_player) ? black_player : white_player;
   uint64_t player_pieces = (player == white_player) ? game_board.white_occupied : game_board.black_occupied;
@@ -143,6 +145,27 @@ int main(void) {
     SDL_RenderTexture(render_context.renderer, render_context.board_texture, NULL, NULL);
     SDL_RenderTexture(render_context.renderer, render_context.pieces_cache.texture, NULL, NULL);
     SDL_RenderTexture(render_context.renderer, menu_texture, NULL, NULL);
+    SDL_RenderTexture(render_context.renderer, letter_number_texture, NULL, NULL);
+    SDL_RenderPresent(render_context.renderer);
+
+    // Frame timing to cap FPS
+    frame_end = SDL_GetTicks();
+    frame_time = frame_end - frame_start;
+    if (frame_time < FRAME_TIME_MS) {
+      SDL_Delay(FRAME_TIME_MS - frame_time); // Cap FPS
+    }
+  }
+
+  while(!player_choice_made && !exit_requested) {
+    frame_start = SDL_GetTicks();
+    while (SDL_PollEvent(&event)) {
+        player_color_menu_event(&event, &player_choice_made, &player, &exit_requested, &config);
+    }
+    SDL_SetRenderDrawColor(render_context.renderer, 0, 0, 0, 255);
+    SDL_RenderClear(render_context.renderer);
+    SDL_RenderTexture(render_context.renderer, render_context.board_texture, NULL, NULL);
+    SDL_RenderTexture(render_context.renderer, render_context.pieces_cache.texture, NULL, NULL);
+    SDL_RenderTexture(render_context.renderer, player_color_menu_texture, NULL, NULL);
     SDL_RenderTexture(render_context.renderer, letter_number_texture, NULL, NULL);
     SDL_RenderPresent(render_context.renderer);
 
@@ -221,6 +244,7 @@ int main(void) {
       // Render human move immediately so the board updates before AI thinks
       SDL_RenderTexture(render_context.renderer, render_context.board_texture, NULL, NULL);
       SDL_RenderTexture(render_context.renderer, render_context.pieces_cache.texture, NULL, NULL);
+      SDL_RenderTexture(render_context.renderer, letter_number_texture, NULL, NULL);
       SDL_RenderPresent(render_context.renderer);
 
       // Check if human move gave opponent no legal moves (checkmate/stalemate)
@@ -235,7 +259,7 @@ int main(void) {
       }
 
       // --- AI move ---
-      uint32_t ai_move = find_best_move(&game_board, 4);
+      uint32_t ai_move = find_best_move(&game_board, 6);
       if (ai_move) {
         printf("AI Move: From %d to %d\n\n", ai_move & 0x3F, (ai_move >> 6) & 0x3F);
         history_push(&board_history, &game_board, ai_move);

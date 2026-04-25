@@ -18,13 +18,6 @@
 #define RESULT_DRAW        0
 #define RESULT_NONE        2
 
-// Game state (used by GUI)
-typedef enum {
-    GAME_PLAYING,
-    GAME_CHECKMATE,
-    GAME_STALEMATE,
-} GameState;
-
 // Game mode
 typedef enum {
     MODE_TWO_PLAYERS,

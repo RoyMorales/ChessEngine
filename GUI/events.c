@@ -42,6 +42,29 @@ void mouse_click_menu(float mouse_x, float mouse_y, struct Config* config, bool*
   }
 }
 
+void mouse_click_player_menu(float mouse_x, float mouse_y, struct Config* config, bool* player_choice_made, char* player_color, bool* exit_requested) {
+  if(mouse_x >= config->window_width / 8 * 2.5f && mouse_x <= config->window_width / 8 * 5.5f) {
+    if(mouse_y >= config->window_height / 8 * 1.5f && mouse_y <= config->window_height / 8 * 3.0f) {
+      *player_color = white_player;
+      *player_choice_made = true; 
+      printf("----------------------------\n");
+      printf("Player chose White.\n");
+      printf("----------------------------\n");
+    } else if(mouse_y >= config->window_height / 8 * 3.5f && mouse_y <= config->window_height / 8 * 5.0f) {
+      *player_color = black_player;
+      *player_choice_made = true;
+      printf("----------------------------\n");
+      printf("Player chose Black.\n");
+      printf("----------------------------\n");
+    } else if(mouse_y >= config->window_height / 8 * 5.5f && mouse_y <= config->window_height / 8 * 6.5f) {
+      *exit_requested = true;
+      printf("----------------------------\n");
+      printf("Exit requested.\n");
+      printf("----------------------------\n");
+    } 
+  }
+}
+
 struct MoveList* select_pieces_moves(struct MoveList* moves_list, int board_index) {
   struct MoveList* piece_moves = malloc(sizeof(struct MoveList));
   piece_moves->count = 0;
@@ -83,7 +106,21 @@ void player_menu_event(SDL_Event* event, bool* one_player_selected, bool* two_pl
     }
 }
 
-
+void player_color_menu_event(SDL_Event* event, bool* player_choice_made, char* player_color, bool* exit_requested, struct Config* config) {
+  switch (event->type) {
+      case SDL_EVENT_MOUSE_BUTTON_DOWN:
+        mouse_click_player_menu(event->button.x, event->button.y, config, player_choice_made, player_color, exit_requested); 
+        break;
+      case SDL_EVENT_QUIT:
+        exit(0);
+      case SDL_EVENT_KEY_DOWN:
+        if (event->key.key == SDLK_ESCAPE) {
+          exit(0);
+        }
+      default:
+        break;
+    }
+}
 
 void main_switch_event(SDL_Event* event, bool* running, uint32_t *move,
                       struct MoveList* move_list, struct MoveList* move_list_piece, 
