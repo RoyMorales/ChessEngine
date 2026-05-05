@@ -6,6 +6,9 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+// Set to true to suppress debug output (used by UCI mode)
+extern bool board_quiet_mode;
+
 #define CASTLE_WK 0b0001  // White king-side  (K)
 #define CASTLE_WQ 0b0010  // White queen-side (Q)
 #define CASTLE_BK 0b0100  // Black king-side  (k)
@@ -30,8 +33,7 @@ struct Board {
   unsigned char half_turn; // 1 Byte
   unsigned char counter_turn; // 1 Byte
 
-  // Bboard hash here for faster repetition detection and transposition table lookups
-  uint64_t board_hash; // 8 Bytes
+  // Add board hash here for faster repetition detection and transposition table lookups
 };
 
 // Player colors
@@ -63,5 +65,4 @@ void update_occupancy(struct Board* board);
 struct Board fen_to_bitboards(char fen_string[]);
 
 #endif
-
 

@@ -8,6 +8,9 @@
 
 #include "board.h"
 
+// When true, suppress all debug output (e.g. UCI mode needs clean stdout)
+bool board_quiet_mode = false;
+
 // Helper function to set a specific bit in a number
 void set_bit(uint64_t* number, int bit) {
   *number |= (1ULL << bit);
@@ -37,7 +40,7 @@ struct Board fen_to_bitboards(char fen_string[]) {
   char* token = strtok(fen_string, " ");
   int part = 0;
 
-  printf("----------------------------\n");
+  if (!board_quiet_mode) printf("----------------------------\n");
   while(token != NULL) {
 
     if (part == 0) {
@@ -78,12 +81,12 @@ struct Board fen_to_bitboards(char fen_string[]) {
           file++;
         }
       }
-      printf("Finished parsing piece placement.\n");
+      if (!board_quiet_mode) printf("Finished parsing piece placement.\n");
     }
 
     else if(part == 1) {
       board.player_turn = (token[0] == 'w') ? 0 : 1;
-      printf("Player Turn: %s\n", board.player_turn == 0 ? "White" : "Black");
+      if (!board_quiet_mode) printf("Player Turn: %s\n", board.player_turn == 0 ? "White" : "Black");
     }
 
     else if(part == 2) {
@@ -99,7 +102,7 @@ struct Board fen_to_bitboards(char fen_string[]) {
           default: break;
         }
       }
-      printf("Castling Rights: %u\n", board.castling_rights);
+      if (!board_quiet_mode) printf("Castling Rights: %u\n", board.castling_rights);
     }
 
     else if(part == 3) {
@@ -113,23 +116,23 @@ struct Board fen_to_bitboards(char fen_string[]) {
           board.en_passant_square = EP_NONE;
         }
       }
-      printf("En Passant Square: %u\n", board.en_passant_square);
+      if (!board_quiet_mode) printf("En Passant Square: %u\n", board.en_passant_square);
     }
 
     else if(part == 4) {
       board.half_turn = token[0] - '0';
-      printf("Half Turn: %u\n", board.half_turn);
+      if (!board_quiet_mode) printf("Half Turn: %u\n", board.half_turn);
     }
 
     else if(part == 5) {
       board.counter_turn = token[0] - '0';
-      printf("Counter Turn: %u\n", board.counter_turn);
+      if (!board_quiet_mode) printf("Counter Turn: %u\n", board.counter_turn);
     }
 
     part ++;
     token = strtok(NULL, " ");
   }
-  printf("----------------------------\n");
+  if (!board_quiet_mode) printf("----------------------------\n");
   return board;
 }
 
