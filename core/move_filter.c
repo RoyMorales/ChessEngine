@@ -46,46 +46,47 @@ bool is_square_attacked(struct Board* board, int square, bool by_white) {
 
 
 int get_king_square(struct Board* board, bool player_colour) {
-    uint64_t king_square = player_colour ? board->bitboards[white_king] : board->bitboards[black_king];
-    if (!king_square) {
-        printf("Error: No king found for player %s\n", player_colour ? "White" : "Black");
+    // white_player = 0 (falsy), black_player = 1 (truthy) — must match enum
+    uint64_t king_bb = (player_colour == white_player)
+                       ? board->bitboards[white_king]
+                       : board->bitboards[black_king];
+    if (!king_bb) {
+        printf("Error: No king found for player %s\n",
+               player_colour == white_player ? "White" : "Black");
         return -1;
     }
-    return __builtin_ctzll(king_square);
+    return __builtin_ctzll(king_bb);
 }
 
 
 bool check_castling_legality(struct Board* board, uint32_t move) {
     
     if (board->player_turn == white_player) {
-        // White kingside castling
+        // White castling: check squares are not attacked by black (by_white = false)
         if (((move & 0x3F) == 4) && (((move >> 6) & 0x3F) == 6)) {
-            if (is_square_attacked(board, 4, white_player) ||
-                is_square_attacked(board, 5, white_player) ||
-                is_square_attacked(board, 6, white_player))
+            if (is_square_attacked(board, 4, false) ||
+                is_square_attacked(board, 5, false) ||
+                is_square_attacked(board, 6, false))
                 return false;
         }
-        // White queenside castling
         else if (((move & 0x3F) == 4) && (((move >> 6) & 0x3F) == 2)) {
-            if (is_square_attacked(board, 4, white_player) ||
-                is_square_attacked(board, 3, white_player) ||
-                is_square_attacked(board, 2, white_player))
+            if (is_square_attacked(board, 4, false) ||
+                is_square_attacked(board, 3, false) ||
+                is_square_attacked(board, 2, false))
                 return false;
         }
     } else {
-        // Black kingside castling
+        // Black castling: check squares are not attacked by white (by_white = true)
         if (((move & 0x3F) == 60) && (((move >> 6) & 0x3F) == 62)) {
-            if (is_square_attacked(board, 60, black_player) ||
-                is_square_attacked(board, 61, black_player) ||
-                is_square_attacked(board, 62, black_player)) {
+            if (is_square_attacked(board, 60, true) ||
+                is_square_attacked(board, 61, true) ||
+                is_square_attacked(board, 62, true))
                 return false;
-            }
         }
-        // Black queenside castling
         else if (((move & 0x3F) == 60) && (((move >> 6) & 0x3F) == 58)) {
-            if (is_square_attacked(board, 60, black_player) ||
-                is_square_attacked(board, 59, black_player) ||
-                is_square_attacked(board, 58, black_player)) 
+            if (is_square_attacked(board, 60, true) ||
+                is_square_attacked(board, 59, true) ||
+                is_square_attacked(board, 58, true))
                 return false;
         }
     }
@@ -103,13 +104,17 @@ bool is_legal_move(struct Board* board, uint32_t move) {
     bool is_ep = (move >> EN_PASSANT) & 0x1;
     
     // Changes Player Side 
+    bool mover = board->player_turn;   // Save before apply_move flips it
     apply_move(&board_copy, move);
-    int king_square = get_king_square(&board_copy, board_copy.player_turn);
+    int king_square = get_king_square(&board_copy, mover);
+    if (king_square < 0) return false;
 
-    if (is_square_attacked(&board_copy, king_square, !board_copy.player_turn)) return false;
-    if (is_ep && (is_square_attacked(&board_copy, king_square, !board_copy.player_turn))) return false;
-   
-   return true;
+    // is_square_attacked(board, sq, by_white): by_white=true means white attacks
+    // mover==white_player means opponent is black, so by_white=false
+    bool attacked_by_white = (mover != white_player);
+    if (is_square_attacked(&board_copy, king_square, attacked_by_white)) return false;
+
+    return true;
 }
 
 
