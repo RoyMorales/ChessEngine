@@ -18,7 +18,7 @@
 #include "core/board_history.h"
 
 #define FPS_UPDATE_INTERVAL 10
-#define TARGET_FPS 60
+#define TARGET_FPS 30
 #define FRAME_TIME_MS (1000 / TARGET_FPS)
 
 
@@ -259,7 +259,7 @@ int main(void) {
       }
 
       // --- AI move ---
-      uint32_t ai_move = find_best_move(&game_board, 6);
+      uint32_t ai_move = find_best_move(&game_board, 8);
       if (ai_move) {
         printf("AI Move: From %d to %d\n\n", ai_move & 0x3F, (ai_move >> 6) & 0x3F);
         history_push(&board_history, &game_board, ai_move);
