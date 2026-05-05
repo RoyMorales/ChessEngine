@@ -1,4 +1,7 @@
 ToDO!
 
-1) Move list_move to the board struct
-2) Create a hash identifier for each board state
+- Create a hash identifier for each board state
+- Add colour player choice -> 
+    Menu done 
+    Missing Black play
+- Memory Leak, most likelly from textures
