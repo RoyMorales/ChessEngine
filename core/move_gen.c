@@ -3,8 +3,6 @@
 #include "move_gen.h"
 #include <stdio.h>
 
-#define TRACE printf("HERE %s:%d\n", __FILE__, __LINE__);
-
 void generate_king_moves(uint64_t kings, struct MoveList* move_list, uint64_t own_pieces, uint64_t opponent_pieces) {
     while (kings) {
         int from_square = __builtin_ctzll(kings);
