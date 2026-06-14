@@ -1,0 +1,6 @@
+
+# Ignore compiled object files
+*.o
+
+# Ignore object files in subdirectories
+**/*.o

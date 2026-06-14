@@ -40,6 +40,9 @@ PERFT_SRC := \
 WAC_SRC := \
 	util/wac.c
 
+MEM_SRC := \
+	mem_test.c
+
 # -------------------------
 # Object files
 # -------------------------
@@ -56,6 +59,7 @@ ENGINE  := CodFish       # UCI engine binary
 GUI     := ChessGUI      # SDL3 GUI binary
 PERFT   := perft
 WAC     := wac
+MEMTEST := mem_test
 
 # -------------------------
 # Compiler flags
@@ -95,6 +99,10 @@ wac: $(WAC)
 $(WAC): $(BOARD_OBJ) $(WAC_OBJ) engine/eval.o
 	$(CC) $^ -o $@ $(LDFLAGS_PLAIN)
 
+memtest: $(MEMTEST)
+$(MEMTEST): $(BOARD_OBJ) mem_test.o
+	$(CC) $^ -o $@ $(LDFLAGS_PLAIN)
+
 # -------------------------
 # Utility
 # -------------------------
@@ -110,5 +118,11 @@ run-engine: $(ENGINE)
 
 run-perft: $(PERFT)
 	./$(PERFT)
+
+run-wac: $(WAC)
+	./$(WAC)
+
+run-memtest: $(MEMTEST)
+	./$(MEMTEST)
 
 .PHONY: all engine gui perft wac clean run run-engine run-perft
